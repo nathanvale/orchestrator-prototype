@@ -14,15 +14,21 @@ import { readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
-// Self-destruct after 2s (safety net)
-setTimeout(() => process.exit(0), 2000)
+// Self-destruct after 2s (safety net) -- cleared in finally so process exits immediately
+const killTimer = setTimeout(() => process.exit(0), 2000)
 
 // Kill switch
-if (process.env.SIDE_QUEST_EVENTS === '0') process.exit(0)
+if (process.env.SIDE_QUEST_EVENTS === '0') {
+	clearTimeout(killTimer)
+	process.exit(0)
+}
 
 const eventType = process.argv[2]
 const jsonData = process.argv[3] || '{}'
-if (!eventType) process.exit(0)
+if (!eventType) {
+	clearTimeout(killTimer)
+	process.exit(0)
+}
 
 // Discover server from global port file
 const portFile = join(
@@ -34,14 +40,18 @@ const portFile = join(
 let port: number
 try {
 	port = parseInt(readFileSync(portFile, 'utf-8').trim(), 10)
-	if (Number.isNaN(port) || port <= 0) process.exit(0)
+	if (Number.isNaN(port) || port <= 0) {
+		clearTimeout(killTimer)
+		process.exit(0)
+	}
 } catch {
+	clearTimeout(killTimer)
 	process.exit(0) // No server running -- silent exit
 }
 
 // POST partial envelope -- server wraps it
 const controller = new AbortController()
-setTimeout(() => controller.abort(), 500)
+const abortTimer = setTimeout(() => controller.abort(), 500)
 try {
 	await fetch(`http://127.0.0.1:${port}/events`, {
 		method: 'POST',
@@ -57,4 +67,7 @@ try {
 	})
 } catch {
 	// Fire and forget -- never fail the orchestrator
+} finally {
+	clearTimeout(abortTimer)
+	clearTimeout(killTimer)
 }
