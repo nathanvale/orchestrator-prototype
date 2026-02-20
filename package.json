@@ -1,10 +1,11 @@
 {
-	"name": "{{PACKAGE_NAME}}",
+	"name": "orchestrator-prototype",
 	"version": "0.0.0",
-	"description": "{{DESCRIPTION}}",
+	"private": true,
+	"description": "HOP Orchestrator prototype - learn agent orchestration patterns incrementally",
 	"author": {
-		"name": "{{AUTHOR}}",
-		"url": "https://github.com/{{GITHUB_USER}}"
+		"name": "Nathan Vale",
+		"url": "https://github.com/nathanvale"
 	},
 	"license": "MIT",
 	"type": "module",
@@ -25,12 +26,12 @@
 	],
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/{{GITHUB_USER}}/{{REPO_NAME}}.git"
+		"url": "git+https://github.com/nathanvale/orchestrator-prototype.git"
 	},
 	"bugs": {
-		"url": "https://github.com/{{GITHUB_USER}}/{{REPO_NAME}}/issues"
+		"url": "https://github.com/nathanvale/orchestrator-prototype/issues"
 	},
-	"homepage": "https://github.com/{{GITHUB_USER}}/{{REPO_NAME}}#readme",
+	"homepage": "https://github.com/nathanvale/orchestrator-prototype#readme",
 	"keywords": [
 		"typescript",
 		"bun",
