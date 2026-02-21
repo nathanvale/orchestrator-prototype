@@ -10,6 +10,8 @@ An educational repository for learning agent orchestration patterns incrementall
 
 This is a prototype of the HOP (Higher-Order Prompt) Orchestrator - a prompt that takes other prompts as parameters, like a higher-order function. The fixed wrapper handles orchestration (task creation, agent dispatch, validation). The variable parameters handle identity (which builder, which validator, which team).
 
+Stage 2 adds multi-task decomposition and DAG execution -- the orchestrator now breaks a prompt into a dependency graph, computes waves via topological sort (Kahn's algorithm), and dispatches agents wave by wave. A spec file is written before any agent runs and serves as the shared source of truth throughout execution.
+
 **Learning tool first.** Built incrementally so each stage teaches one concept. When finished, it doubles as an educational resource for others.
 
 **See:** `specs/master-plan.md` for the full roadmap, `docs/patterns/` for pattern explanations.
@@ -23,9 +25,11 @@ This is a prototype of the HOP (Higher-Order Prompt) Orchestrator - a prompt tha
   agents/           # Agent definitions (builder, validator, etc.)
   commands/         # User-facing commands (/orchestrate)
   skills/           # Skill definitions (orchestrator SKILL.md)
+    orchestrator/
+      references/   # Technical references (dag-execution.md)
   settings.json     # Tool permissions
 
-specs/              # Orchestration spec files (output) + master plan
+specs/              # Spec files written by the orchestrator before agent dispatch + master plan
 specs/examples/     # Gallery of example spec outputs per stage
 prompts/            # Curated test prompts per stage
 docs/patterns/      # Pattern docs - what, how, why (progressive per stage)
@@ -42,10 +46,11 @@ tests/              # Tests
 /orchestrate "add a hello world function in src/hello.ts that exports a greet function"
 
 # The orchestrator will:
-# 1. Create a task
-# 2. Dispatch a Builder agent to implement it
-# 3. Dispatch a Validator agent to verify it
-# 4. Report the result
+# 1. Decompose the prompt into a task graph with dependency waves
+# 2. Write a spec file to specs/ (plan before any agent is dispatched)
+# 3. Create all tasks with dependency relationships visible upfront
+# 4. Execute wave by wave -- dispatch Builder then Validator per task
+# 5. Report the result with per-task verdicts and wave summary
 ```
 
 ---
@@ -86,12 +91,19 @@ bun test                 # Run all tests
 
 ## Branch Strategy
 
-Each stage is a permanent, runnable snapshot. Diff between them to see what each capability adds.
+**Cumulative chain:** each stage branches from the previous stage, not from main. Main is a bare shell (template, config, master plan) -- it never receives stage merges.
 
 ```bash
-git diff stage/1-dispatch..stage/2-dag    # What DAG adds
-git diff stage/2-dag..stage/3-full        # What retry/questions add
+# Starting a new stage
+git checkout stage/N-1-name && git checkout -b stage/N-name
+
+# Diff commands for readers
+git diff main..stage/1-dispatch              # What stage 1 adds to the shell
+git diff stage/1-dispatch..stage/2-dag       # What stage 2 adds
+git diff stage/2-dag..stage/3-full           # What stage 3 adds
 ```
+
+See `specs/master-plan.md` "Branch Strategy" for full rules.
 
 ---
 
