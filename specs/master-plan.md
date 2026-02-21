@@ -112,7 +112,23 @@ A Higher-Order Prompt -- a prompt that takes another prompt as a parameter (like
 
 ---
 
+## Current Status
+
+| Stage | Branch | Status |
+|-------|--------|--------|
+| 1 | `stage/1-dispatch` | Complete -- merged, tested, patterns documented |
+| 2 | `stage/2-dag` | In progress -- specs, patterns, and skill updates written. Implementation next. |
+| 3-9 | not yet created | Planned |
+
+**Last checkpoint:** Branch topology fixed -- `stage/2-dag` now correctly descends from `stage/1-dispatch` (not from main). Main reset to clean shell at `aa3ace8`.
+
+**Next step:** Implement the DAG orchestration logic in the SKILL.md and dag-execution.md reference, then test with `prompts/stage-2/rest-api.md`.
+
+---
+
 ## Stage 1: Minimum Viable Dispatch
+
+**Branch:** `stage/1-dispatch` (from `main`)
 
 **Goal:** Prove the three-part dispatch loop works. Orchestrator creates ONE task, dispatches ONE builder, then ONE validator.
 
@@ -150,6 +166,8 @@ No DAG, no waves, no spec file, no retry, no clarifying questions, no fast path,
 
 ## Stage 2: Multi-Task Decomposition with DAG
 
+**Branch:** `stage/2-dag` (from `stage/1-dispatch`)
+
 **Goal:** Decompose into 3+ tasks with dependencies, write a spec file, execute sequentially following topological order.
 
 **Patterns introduced:**
@@ -178,6 +196,8 @@ No DAG, no waves, no spec file, no retry, no clarifying questions, no fast path,
 
 ## Stage 3: Full Phase 1
 
+**Branch:** `stage/3-full` (from `stage/2-dag`)
+
 **Goal:** Complete Phase 1 feature set -- retry, clarifying questions, plan refinement, fast path, spec re-read, token estimation, summary.
 
 **Patterns introduced:**
@@ -203,6 +223,8 @@ No DAG, no waves, no spec file, no retry, no clarifying questions, no fast path,
 
 ## Stage 4: HOP Parameterization Proof
 
+**Branch:** `stage/4-hop` (from `stage/3-full`)
+
 **Goal:** Prove the orchestrator is agent-agnostic. Create a second agent team, use `--team` flag to switch.
 
 **Patterns introduced:**
@@ -219,6 +241,8 @@ No DAG, no waves, no spec file, no retry, no clarifying questions, no fast path,
 
 ## Stage 5: Extract to side-quest-plugins
 
+**Branch:** `stage/5-plugin` (from `stage/4-hop`)
+
 **Goal:** Move working prototype into the plugin system.
 
 **Patterns introduced:**
@@ -230,27 +254,78 @@ No DAG, no waves, no spec file, no retry, no clarifying questions, no fast path,
 
 Each gets its own detailed plan before implementation. See stage descriptions in the "Stages at a Glance" table above.
 
+| Stage | Branch | Parent |
+|-------|--------|--------|
+| 6 | `stage/6-codex` | `stage/5-plugin` |
+| 7 | `stage/7-hitl` | `stage/6-codex` |
+| 8 | `stage/8-parallel` | `stage/7-hitl` |
+| 9 | `stage/9-browser` | `stage/8-parallel` |
+
 ---
 
-## Branch Strategy - Living Examples
+## Branch Strategy - Cumulative Chain
 
-Each stage gets its own long-living branch. These are never deleted -- they serve as permanent, runnable snapshots.
+**Branch model: cumulative chain.** Each stage branches from the previous stage (not from main). This means each branch contains everything from prior stages plus its own additions. Branches are never deleted -- they serve as permanent, runnable snapshots. Main stays as a clean shell (template baseline, config, master plan) -- it never receives stage merges.
 
 ```
-main                          # Template baseline
+main (bare shell -- no stage implementations)
   |
-  +-- stage/1-dispatch        # Minimum viable: single task, builder, validator
-  +-- stage/2-dag             # Multi-task DAG with wave execution
-  +-- stage/3-full            # Complete Phase 1 (retry, questions, fast path)
-  +-- stage/4-hop             # HOP proof with --team switching
-  +-- stage/5-plugin          # Plugin extraction
-  +-- stage/6-codex           # Codex escalation + spec hardening
-  +-- stage/7-hitl            # Human-in-the-loop + cross-session persistence
-  +-- stage/8-parallel        # Parallel worktree execution
-  +-- stage/9-browser         # agent-browser validation
+  +-- stage/1-dispatch
+        |
+        +-- stage/2-dag
+              |
+              +-- stage/3-full
+                    |
+                    +-- stage/4-hop
+                          |
+                          +-- stage/5-plugin
+                                |
+                                +-- stage/6-codex
+                                      |
+                                      +-- stage/7-hitl
+                                            |
+                                            +-- stage/8-parallel
+                                                  |
+                                                  +-- stage/9-browser
 ```
 
-**Diff-friendly progression:** `git diff stage/1-dispatch..stage/2-dag` shows exactly what DAG adds. Each branch is a standalone tutorial chapter.
+### What lives on main
+
+Main is the bare scaffold -- a "table of contents," not a chapter:
+
+- Starter template (`package.json`, `tsconfig.json`, `biome.json`, CI config)
+- `specs/master-plan.md` (this file)
+- Minimal `CLAUDE.md` pointing readers to stage branches
+- **No** stage implementations, agents, skills, or pattern docs
+
+### Rules for starting a new stage
+
+1. Checkout the previous stage branch: `git checkout stage/N-1-name`
+2. Create the new branch: `git checkout -b stage/N-name`
+3. Implement the stage
+4. Push the branch -- **never merge to main**
+
+### Branch protection
+
+All stage branches have GitHub branch protection rules preventing deletion. These are permanent educational snapshots -- deleting any branch breaks the learning path. Protection is applied via a `stage/*` wildcard rule.
+
+When creating a new stage branch, it's automatically covered by the wildcard rule -- no manual setup needed.
+
+### Rules for fixing earlier stages
+
+- Fix on the affected stage branch
+- Cherry-pick or rebase forward through subsequent stages
+- This is a known maintenance cost, acceptable for a bounded 9-stage repo
+
+### Diff commands for readers
+
+```bash
+git diff main..stage/1-dispatch              # What stage 1 adds to the shell
+git diff stage/1-dispatch..stage/2-dag       # What stage 2 adds
+git diff stage/2-dag..stage/3-full           # What stage 3 adds
+```
+
+Each diff shows exactly what a stage introduces -- no noise from unrelated changes.
 
 ---
 
@@ -264,5 +339,5 @@ main                          # Template baseline
 - **Resume on retry** -- `resume: agentId` preserves builder's prior context
 - **Spec re-read at each wave** -- context compaction can evict the plan
 - **Prototype before plugin** -- iterate fast, prove HOP works, then extract
-- **Long-living branches** -- each stage is a permanent, runnable snapshot
+- **Cumulative branches, clean main** -- main is a shell, each stage branches from the previous one. Optimizes for readers (checkout-and-run, progressive diffs) over maintainers (cherry-pick cascade on fixes). Acceptable tradeoff for a bounded 9-stage learning repo
 - **Pattern docs grow progressively** -- each stage adds new patterns to `docs/patterns/`
