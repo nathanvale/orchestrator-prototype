@@ -116,15 +116,17 @@ A Higher-Order Prompt -- a prompt that takes another prompt as a parameter (like
 
 | Stage | Branch | Status |
 |-------|--------|--------|
-| 1 | `stage/1-dispatch` | Complete -- merged, tested, patterns documented |
-| 2 | `stage/2-dag` | In progress -- specs, patterns, and skill updates written. Implementation next. |
-| 3-9 | not yet created | Planned |
+| 1 | `stage/1-dispatch` | Complete -- 6 commits, patterns documented |
+| 2 | `stage/2-dag` | Complete -- 6 commits, specs/patterns/skill written |
+| 3 | `stage/3-full` | Next up |
+| 4-9 | not yet created | Planned |
 
-**Last checkpoint:** Branch topology fixed -- `stage/2-dag` now correctly descends from `stage/1-dispatch` (not from main). Main reset to clean shell at `aa3ace8`.
+**Last checkpoint:** Commit history rewritten for educational clarity -- each commit maps to a logical step in the file tables below. Both stage branches force-pushed with clean history.
 
-**Next step:** Implement the DAG orchestration logic in the SKILL.md and dag-execution.md reference, then test with `prompts/stage-2/rest-api.md`.
+**Next step:** Create `stage/3-full` from `stage/2-dag` and implement retry, clarifying questions, fast path, plan refinement, spec re-read, token estimation, and summary.
 
 ---
+
 
 ## Stage 1: Minimum Viable Dispatch
 
@@ -186,8 +188,8 @@ Each numbered group maps to one commit in the branch history.
 | 1 | `.claude/skills/orchestrator/SKILL.md`, `.claude/skills/orchestrator/references/dag-execution.md`, `.claude/CLAUDE.md` | Major skill update (decomposition, wave computation, spec writing), new DAG execution reference, updated project description |
 | 2 | `docs/patterns/task-dag.md`, `docs/patterns/wave-computation.md`, `docs/patterns/spec-as-source-of-truth.md` | Pattern documentation -- task DAG, wave computation, spec-as-source-of-truth |
 | 3 | `specs/stage-2-multi-task-dag.md`, `prompts/stage-2/rest-api.md`, `prompts/stage-2/cli-tool.md`, `specs/examples/stage-2-rest-api.md` | Stage spec, test prompts, and example output |
-| 4 | `specs/master-plan.md` | Update master plan with cumulative branch strategy, status, and file tables |
-| 5 | `src/hello.ts` (deleted), `src/index.ts` (deleted), `tests/index.test.ts` (deleted) | Remove stage-1 verification target and template files (replaced by stage-2 implementation) |
+| 4 | `specs/master-plan.md` | Update master plan with status, file tables matching commit history |
+| 5 | `src/hello.ts` (deleted), `src/index.ts` (deleted), `tests/index.test.ts` (deleted) | Remove stage-1 verification target and template files |
 
 ### Verification
 
@@ -212,12 +214,16 @@ Each numbered group maps to one commit in the branch history.
 - `docs/patterns/fast-path-gate.md`
 - `docs/patterns/iterative-refinement.md`
 
-### Files to Modify
+### Files to Create/Modify
 
-| # | File | Action |
-|---|------|--------|
-| 1 | `.claude/skills/orchestrator/SKILL.md` | Full rewrite with all Phase 1 capabilities |
-| 2 | `.claude/skills/orchestrator/references/dag-execution.md` | Add retry protocol, spec re-read, fast path rules |
+Each numbered group maps to one commit in the branch history.
+
+| # | Files | Action |
+|---|-------|--------|
+| 1 | `.claude/skills/orchestrator/SKILL.md`, `.claude/skills/orchestrator/references/dag-execution.md`, `.claude/CLAUDE.md` | Full skill rewrite (retry, clarifying questions, fast path, plan refinement, spec re-read, token estimation, summary), update DAG reference with retry protocol and fast path rules, update project description |
+| 2 | `docs/patterns/retry-with-resume.md`, `docs/patterns/fast-path-gate.md`, `docs/patterns/iterative-refinement.md` | Pattern documentation -- retry with resume, fast path gate, iterative refinement |
+| 3 | `specs/stage-3-full-phase-1.md`, `prompts/stage-3/vague-auth.md`, `prompts/stage-3/simple-jsdoc.md`, `prompts/stage-3/multi-task-retry.md` | Stage spec, test prompts (vague prompt for clarifying questions, simple prompt for fast path, multi-task for retry) |
+| 4 | `specs/master-plan.md` | Update master plan with status and file tables |
 
 ### Verification
 
