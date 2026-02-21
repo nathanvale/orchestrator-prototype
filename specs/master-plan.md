@@ -139,14 +139,16 @@ A Higher-Order Prompt -- a prompt that takes another prompt as a parameter (like
 
 ### Files to Create
 
-| # | File | What it does |
-|---|------|-------------|
-| 1 | `.claude/CLAUDE.md` | Modify template's CLAUDE.md -- add orchestrator overview, agent conventions, spec directory |
-| 2 | `.claude/settings.json` | Pre-approve tools: Task, TaskCreate/Update/List/Get, TaskOutput, Read, Write, Edit, Glob, Grep, Bash |
-| 3 | `.claude/agents/builder.md` | Generic builder agent. model: sonnet, tools: Read/Glob/Grep/Write/Edit/Bash/TaskGet/TaskUpdate |
-| 4 | `.claude/agents/validator.md` | Generic validator agent. model: haiku, disallowedTools: Write/Edit/NotebookEdit |
-| 5 | `.claude/commands/orchestrate.md` | Thin wrapper. frontmatter: description, argument-hint, model: opus, skill: orchestrator |
-| 6 | `.claude/skills/orchestrator/SKILL.md` | Minimal version. HOP variables, 5-step dispatch protocol |
+Each numbered group maps to one commit in the branch history.
+
+| # | Files | What it does |
+|---|-------|-------------|
+| 1 | `.claude/CLAUDE.md`, `specs/master-plan.md` | Project configuration -- update template CLAUDE.md with orchestrator overview, simplify master plan for stage context |
+| 2 | `.claude/agents/builder.md`, `.claude/agents/validator.md`, `docs/agents.md` | Builder agent (sonnet), validator agent (haiku), and agent catalog documentation |
+| 3 | `.claude/commands/orchestrate.md`, `.claude/skills/orchestrator/SKILL.md` | Orchestrator command (thin wrapper) and skill (HOP variables, 5-step dispatch protocol) |
+| 4 | `docs/patterns/builder-validator.md`, `docs/patterns/dispatch-loop.md`, `docs/patterns/higher-order-prompt.md` | Pattern documentation -- builder/validator, dispatch loop, HOP concept introduction |
+| 5 | `specs/stage-1-minimum-viable-dispatch.md`, `prompts/stage-1/hello-world.md`, `prompts/stage-1/add-utility.md`, `scripts/emit-event.ts`, `.claude/settings.json` | Stage spec, test prompts, emit-event script, and tool permissions |
+| 6 | `src/hello.ts` | Verification target -- greet function for testing the dispatch loop |
 
 ### Verification
 
@@ -177,10 +179,15 @@ No DAG, no waves, no spec file, no retry, no clarifying questions, no fast path,
 
 ### Files to Create/Modify
 
-| # | File | Action |
-|---|------|--------|
-| 1 | `.claude/skills/orchestrator/SKILL.md` | Major update -- add decomposition, wave computation, spec file writing |
-| 2 | `.claude/skills/orchestrator/references/dag-execution.md` | NEW -- wave algorithm, dependency rules, idempotency, timeout handling |
+Each numbered group maps to one commit in the branch history.
+
+| # | Files | Action |
+|---|-------|--------|
+| 1 | `.claude/skills/orchestrator/SKILL.md`, `.claude/skills/orchestrator/references/dag-execution.md`, `.claude/CLAUDE.md` | Major skill update (decomposition, wave computation, spec writing), new DAG execution reference, updated project description |
+| 2 | `docs/patterns/task-dag.md`, `docs/patterns/wave-computation.md`, `docs/patterns/spec-as-source-of-truth.md` | Pattern documentation -- task DAG, wave computation, spec-as-source-of-truth |
+| 3 | `specs/stage-2-multi-task-dag.md`, `prompts/stage-2/rest-api.md`, `prompts/stage-2/cli-tool.md`, `specs/examples/stage-2-rest-api.md` | Stage spec, test prompts, and example output |
+| 4 | `specs/master-plan.md` | Update master plan with cumulative branch strategy, status, and file tables |
+| 5 | `src/hello.ts` (deleted), `src/index.ts` (deleted), `tests/index.test.ts` (deleted) | Remove stage-1 verification target and template files (replaced by stage-2 implementation) |
 
 ### Verification
 
