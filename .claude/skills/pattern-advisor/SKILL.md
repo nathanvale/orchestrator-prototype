@@ -9,6 +9,19 @@ description: >-
   pattern selection guidance.
 argument-hint: "e.g. 'I need to run 5 tasks with dependencies between them'"
 allowed-tools: Read, Glob, Grep
+hooks:
+  Stop:
+    - hooks:
+        - type: prompt
+          prompt: >-
+            Check if the assistant's response contains a fenced code block
+            with the info string `advisor-envelope`. The block must contain
+            YAML with at least these fields: ranked_patterns,
+            characteristics_detected, next_commands. If the envelope block
+            is missing or incomplete, respond with STOP_REASON: "Response
+            is missing the required advisor-envelope block. Add it before
+            finishing." If the envelope is present and valid, allow the
+            response.
 ---
 
 # Pattern Advisor

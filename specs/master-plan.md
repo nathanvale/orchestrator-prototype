@@ -4,9 +4,9 @@
 
 This repository is a learning tool. It exists to teach agent orchestration patterns incrementally -- first for me as I build it, then for anyone who clones it.
 
-Each git branch is a standalone lesson. `stage/1-dispatch` teaches the dispatch loop. `stage/2-dag` adds task decomposition. `stage/3-full` adds retry logic. You can checkout any branch and have a working system at that complexity level, with pattern docs explaining the "what, how, and why" of everything in play.
+Main is the **lobby** -- a learning hub with `/learn`, `/dojo`, and `/advisor` commands but no orchestrator. Each module branch (`orchestration/1-dispatch`, `orchestration/2-dag`, etc.) is a standalone lesson. You checkout a branch and have a working system at that complexity level, with pattern docs explaining the "what, how, and why" of everything in play.
 
-The `docs/patterns/` folder grows with each stage. By the end, it's a comprehensive guide to agent orchestration patterns, grounded in a real working implementation -- not abstract theory.
+The `docs/patterns/` folder on main holds the complete pattern library. Each module branch has the cumulative subset relevant to that stage. By the end, it's a comprehensive guide to agent orchestration patterns, grounded in a real working implementation -- not abstract theory.
 
 **Build it to learn. Ship it to teach.**
 
@@ -114,23 +114,34 @@ A Higher-Order Prompt -- a prompt that takes another prompt as a parameter (like
 
 ## Current Status
 
-| Stage | Branch | Status |
-|-------|--------|--------|
-| 1 | `stage/1-dispatch` | Complete -- 6 commits, patterns documented |
-| 2 | `stage/2-dag` | Complete -- 6 commits, specs/patterns/skill written |
-| 3 | `stage/3-full` | Complete -- 4 commits, patterns documented |
-| 4-9 | not yet created | Planned |
+| Stage | Old Branch (`stage/*`) | New Branch (`orchestration/*`) | Status |
+|-------|----------------------|-------------------------------|--------|
+| 1 | `stage/1-dispatch` (frozen) | `orchestration/1-dispatch` | Needs rebuild (rename + add /lobby) |
+| 2 | `stage/2-dag` (frozen) | `orchestration/2-dag` | Needs rebuild (rename + add /lobby) |
+| 3 | `stage/3-full` (frozen) | `orchestration/3-full` | Needs rebuild (rename + add /lobby) |
+| 4 | on `chore/tune-product-direction` | `orchestration/4-hop` | Needs rebuild from orchestration/3-full |
+| 5 | on `chore/tune-product-direction` | `orchestration/5-plugin` | Needs rebuild from orchestration/4-hop |
+| 6 | on `chore/tune-product-direction` | `orchestration/6-codex` | Needs rebuild from orchestration/5-plugin |
+| 7 | on `chore/tune-product-direction` | `orchestration/7-hitl` | Needs rebuild from orchestration/6-codex |
+| 8-9 | not yet created | `orchestration/8-parallel`, `orchestration/9-browser` | Planned |
 
-**Last checkpoint:** Commit history rewritten for educational clarity -- each commit maps to a logical step in the file tables below. Both stage branches force-pushed with clean history.
+**Last checkpoint:** Stages 1-3 complete on `stage/*` branches. Stages 4-7 implemented but accumulated on `chore/tune-product-direction` (1059-line SKILL.md). Lobby restructure plan written.
 
-**Next step:** Create `stage/4-hop` from `stage/3-full` and implement HOP parameterization with `--team` switching.
+**Next step:** Execute the lobby restructure plan (`docs/plans/2026-02-23-refactor-lobby-branch-restructure-plan.md`):
+1. Strip main to lobby (Phase 1)
+2. Expand dojo pattern library (Phase 2)
+3. Rebuild orchestration/1-3 from stage/1-3 (Phase 3)
+4. Rebuild orchestration/4-7 from scratch (Phases 4-7)
+5. Finalize anchors, master plan, branch protection (Phase 8)
+
+**Important:** The original `stage/*` branches remain frozen and protected. The new `orchestration/*` branches supersede them.
 
 ---
 
 
 ## Stage 1: Minimum Viable Dispatch
 
-**Branch:** `stage/1-dispatch` (from `main`)
+**Branch:** `orchestration/1-dispatch` (from `main`) -- originally `stage/1-dispatch`
 
 **Goal:** Prove the three-part dispatch loop works. Orchestrator creates ONE task, dispatches ONE builder, then ONE validator.
 
@@ -170,7 +181,7 @@ No DAG, no waves, no spec file, no retry, no clarifying questions, no fast path,
 
 ## Stage 2: Multi-Task Decomposition with DAG
 
-**Branch:** `stage/2-dag` (from `stage/1-dispatch`)
+**Branch:** `orchestration/2-dag` (from `orchestration/1-dispatch`) -- originally `stage/2-dag`
 
 **Goal:** Decompose into 3+ tasks with dependencies, write a spec file, execute sequentially following topological order.
 
@@ -205,7 +216,7 @@ Each numbered group maps to one commit in the branch history.
 
 ## Stage 3: Full Phase 1
 
-**Branch:** `stage/3-full` (from `stage/2-dag`)
+**Branch:** `orchestration/3-full` (from `orchestration/2-dag`) -- originally `stage/3-full`
 
 **Goal:** Complete Phase 1 feature set -- retry, clarifying questions, plan refinement, fast path, spec re-read, token estimation, summary.
 
@@ -234,9 +245,25 @@ Each numbered group maps to one commit in the branch history.
 
 ---
 
+## Stages 4-7: Per-Stage Build Plans
+
+Stages 1-3 were built under the original model (detailed file tables in this master plan). Stages 4-7 are being rebuilt under the new lobby framework, which introduces requirements the original file tables don't account for (`/lobby` command, cross-branch `git show` hints, CLAUDE.md templates, lobby pattern reference updates, `orchestration/*` naming, immutable branches).
+
+**The master plan is now the curriculum** -- it defines WHAT each stage teaches, which patterns it introduces, and how to verify it works. The HOW (exact file tables, commit sequences, lobby integration steps) lives in per-stage build plans created via `/workflows:plan` before each stage is implemented.
+
+Each per-stage plan will:
+1. Read this master plan for scope (patterns, verification, "NOT in Stage N")
+2. Read the restructure plan for framework rules (`docs/plans/2026-02-23-refactor-lobby-branch-restructure-plan.md`)
+3. Read `chore/tune-product-direction` for reference material (the existing 1059-line SKILL.md)
+4. Produce exact file tables respecting the lobby framework
+5. Include a "update lobby on main" step (add pattern references, update source anchors)
+
+---
+
 ## Stage 4: HOP Parameterization Proof
 
-**Branch:** `stage/4-hop` (from `stage/3-full`)
+**Branch:** `orchestration/4-hop` (from `orchestration/3-full`)
+**Build plan:** Create via `/workflows:plan` before implementation
 
 **Goal:** Prove the orchestrator is agent-agnostic. Create a second agent team, use `--team` flag to switch.
 
@@ -244,101 +271,200 @@ Each numbered group maps to one commit in the branch history.
 - `docs/patterns/team-profiles.md`
 - `docs/patterns/higher-order-prompt.md` (updated with proof)
 
-### Verification
+**What this stage adds to SKILL.md (~810 lines):** `--team` flag parsing, team resolution algorithm, HOP configuration block
 
+**Verification:**
 1. `/orchestrate "add a utility function"` -- uses engineering team (default)
 2. `/orchestrate "research top 5 TS testing frameworks" --team research` -- uses research team
 3. Both show identical orchestration. Only agents differ. **This is the HOP proof.**
+
+**NOT in Stage 4:** No codex, no HITL, no spec hardening. Pure prompt/docs/agents stage.
+
+**Reference material:** Stage 4 content on `chore/tune-product-direction` branch (1059-line SKILL.md, lines related to team switching)
 
 ---
 
 ## Stage 5: Extract to side-quest-plugins
 
-**Branch:** `stage/5-plugin` (from `stage/4-hop`)
+**Branch:** `orchestration/5-plugin` (from `orchestration/4-hop`)
+**Build plan:** Create via `/workflows:plan` before implementation
 
-**Goal:** Move working prototype into the plugin system.
+**Goal:** Document the plugin extraction. SKILL.md stays identical to stage 4.
 
 **Patterns introduced:**
 - `docs/patterns/plugin-architecture.md`
 
+**What this stage adds to SKILL.md (~810 lines):** Nothing -- SKILL.md unchanged from stage 4. Stage 5's value is the extraction documentation.
+
+**Verification:**
+- `/orchestrate` works identically to stage 4
+- Plugin architecture pattern documented
+
+**NOT in Stage 5:** No TypeScript code changes in orchestrator-prototype.
+
+**Reference material:** Stage 5 content on `chore/tune-product-direction` branch, cross-repo files in `side-quest-plugins/plugins/agentic-orchestration/`
+
 ---
 
-## Stages 6-9: Advanced Capabilities
+## Stage 6: Codex Escalation + Spec Hardening
+
+**Branch:** `orchestration/6-codex` (from `orchestration/5-plugin`)
+**Build plan:** Create via `/workflows:plan` before implementation
+
+**Goal:** Route hard tasks to Codex CLI for deeper reasoning, and harden vague task descriptions into concrete, implementation-ready specs before dispatch.
+
+**Patterns introduced:**
+- `docs/patterns/difficulty-routing.md`
+- `docs/patterns/spec-hardening.md`
+
+**What this stage adds to SKILL.md (~910 lines):** Steps 4b (difficulty assessment) and 7b (spec hardening), Codex dispatch path in Step 10, `--no-codex` flag
+
+**Verification:**
+1. **Hard task routing:** `/orchestrate "refactor user module across 8 files"` -- expect at least one task tagged `difficulty: hard`
+2. **Spec hardening:** `/orchestrate "add error handling"` -- expect hardened acceptance criteria
+3. **Codex fallback:** Run with Codex not installed -- expect standard builder
+4. **--no-codex override:** `/orchestrate "refactor auth" --no-codex` -- all tasks use standard builder
+
+**NOT in Stage 6:** No TypeScript code changes. Codex CLI invoked via Bash.
+
+**Reference material:** Stage 6 content on `chore/tune-product-direction` branch (codex-escalation.md, difficulty scoring, spec hardening logic)
+
+---
+
+## Stage 7: HITL Bounce-Back + Persistence
+
+**Branch:** `orchestration/7-hitl` (from `orchestration/6-codex`)
+**Build plan:** Create via `/workflows:plan` before implementation
+
+**Goal:** Add human-in-the-loop bounce-back for mid-execution conflicts and cross-session resume via hydration checkpoints.
+
+**Patterns introduced:**
+- `docs/patterns/hitl-protocol.md`
+- `docs/patterns/hydration-pattern.md`
+
+**What this stage adds to SKILL.md (~1010 lines):** `--resume` parsing, hydration branch in Step 1, bounce-back detection in Step 10, hydration checkpoints throughout
+
+**Verification:**
+1. **Bounce-back:** Task that triggers a design conflict mid-execution -- expect bounced state and user consultation
+2. **Resume:** Multi-wave task, interrupt, re-run with `--resume` -- expect completed tasks skipped
+3. **Checkpoint:** Hydration checkpoint written after each state change
+4. **Full flow:** Bounce-back mid-execution, user resolves, interrupt and resume -- clean completion
+
+**NOT in Stage 7:** No parallel execution. No external state store. No TypeScript code changes.
+
+**Reference material:** Stage 7 content on `chore/tune-product-direction` branch (hitl-protocol.md, hydration schema, resume protocol)
+
+---
+
+## Stages 8-9: Advanced Capabilities
 
 Each gets its own detailed plan before implementation. See stage descriptions in the "Stages at a Glance" table above.
 
 | Stage | Branch | Parent |
 |-------|--------|--------|
-| 6 | `stage/6-codex` | `stage/5-plugin` |
-| 7 | `stage/7-hitl` | `stage/6-codex` |
-| 8 | `stage/8-parallel` | `stage/7-hitl` |
-| 9 | `stage/9-browser` | `stage/8-parallel` |
+| 8 | `orchestration/8-parallel` | `orchestration/7-hitl` |
+| 9 | `orchestration/9-browser` | `orchestration/8-parallel` |
 
 ---
 
-## Branch Strategy - Cumulative Chain
+## Branch Strategy - Lobby + Module Chain
 
-**Branch model: cumulative chain.** Each stage branches from the previous stage. Main holds the latest complete state. This means each branch contains everything from prior stages plus its own additions. Branches are never deleted -- they serve as permanent, runnable snapshots.
+**Branch model: lobby + cumulative module chain.** Main is a "lobby" -- a learning hub with no orchestrator. Module branches (`orchestration/*`) form a cumulative chain where each stage branches from the previous. Branches are immutable after creation -- permanent, runnable, frozen snapshots.
+
+The lobby is designed for multiple learning modules. The first module is **orchestration**. Future modules (prompt-engineering, research, etc.) follow the same `<module>/N-name` convention.
 
 ```
-main (latest complete state)
+main (lobby) -- /learn, /dojo, /advisor, pattern library, NO orchestrator
   |
-  +-- stage/1-dispatch
+  +-- orchestration/1-dispatch (152 lines)
         |
-        +-- stage/2-dag
+        +-- orchestration/2-dag (407 lines)
               |
-              +-- stage/3-full
+              +-- orchestration/3-full (710 lines)
                     |
-                    +-- stage/4-hop
+                    +-- orchestration/4-hop (~810 lines)
                           |
-                          +-- stage/5-plugin
+                          +-- orchestration/5-plugin (~810 lines)
                                 |
-                                +-- stage/6-codex
+                                +-- orchestration/6-codex (~910 lines)
                                       |
-                                      +-- stage/7-hitl
+                                      +-- orchestration/7-hitl (~1010 lines)
                                             |
-                                            +-- stage/8-parallel
+                                            +-- orchestration/8-parallel (planned)
                                                   |
-                                                  +-- stage/9-browser
+                                                  +-- orchestration/9-browser (planned)
 ```
 
-### What lives on main
+### What lives on main (lobby)
 
-Main holds the latest complete state -- all stage implementations merged when complete:
+Main is the knowledge plane -- learning tools and pattern content, no execution:
 
-- Full project config (`package.json`, `tsconfig.json`, `biome.json`, CI config)
+- `/learn` concierge -- lists all modules and stages
+- `/lobby` signpost -- inherited by all branches, points back to main
+- `/dojo` and `/advisor` -- pattern learning and recommendation tools
+- `docs/patterns/` -- single source of truth for pattern content (portable)
+- `.claude/references/patterns/` -- structured pattern refs with 11-slot frontmatter
 - `specs/master-plan.md` (this file)
-- `CLAUDE.md` with full project conventions
-- All stage implementations, agents, skills, and pattern docs
+- `.claude/CLAUDE.md` -- lobby identity, 11-slot pattern contract documentation
+- Full project config (`package.json`, `tsconfig.json`, `biome.json`)
+
+Main does NOT have: orchestrator SKILL.md, agents, `/orchestrate` command, emit-event script, src/, tests/
+
+### What lives on module branches
+
+Each module branch is a self-contained, runnable lesson:
+
+- `/orchestrate` command + orchestrator SKILL.md (sized for that stage)
+- `/lobby` command (inherited from main -- signpost back)
+- Agents needed for that stage
+- `docs/patterns/` cumulative subset (inherited through chain)
+- Stage-specific CLAUDE.md with cross-branch `git show` hints
 
 ### Rules for starting a new stage
 
-1. Checkout the previous stage branch: `git checkout stage/N-1-name`
-2. Create the new branch: `git checkout -b stage/N-name`
+1. Checkout the previous module branch: `git checkout orchestration/N-1-name`
+2. Create the new branch: `git checkout -b orchestration/N-name`
 3. Implement the stage
-4. Push the branch -- merge to main when complete
+4. Verify with stage prompts
+5. Push the branch -- add pattern references to main's lobby
+
+### Branch immutability
+
+Module branches are frozen after creation. No commits after the initial verification pass. If there's a bug or typo, the fix goes on main (lobby docs) or gets noted -- not patched on the frozen branch. This guarantees:
+- Source anchor line numbers stay accurate
+- `git diff orchestration/N..orchestration/N+1` always shows the same thing
+- A learner coming back months later gets the same experience
 
 ### Branch protection
 
-All stage branches have GitHub branch protection rules preventing deletion. These are permanent educational snapshots -- deleting any branch breaks the learning path. Protection is applied via a `stage/*` wildcard rule.
+GitHub branch protection rules prevent deletion and direct pushes:
+- `orchestration/*` -- immutable module branches (new)
+- `stage/*` -- original frozen branches (preserved)
 
-When creating a new stage branch, it's automatically covered by the wildcard rule -- no manual setup needed.
+When creating a new module branch, it's automatically covered by the `orchestration/*` wildcard rule.
 
-### Rules for fixing earlier stages
+### Cross-branch reading
 
-- Fix on the affected stage branch
-- Cherry-pick or rebase forward through subsequent stages
-- This is a known maintenance cost, acceptable for a bounded 9-stage repo
+Agents and humans can read files from any branch without checking out:
+
+```bash
+git show main:docs/patterns/wave-computation.md           # Read pattern from main
+git show orchestration/2-dag:.claude/skills/orchestrator/SKILL.md  # Read SKILL.md from a stage
+```
+
+This bridges the gap between the lobby (patterns) and module branches (proof) without branch switching.
 
 ### Diff commands for readers
 
 ```bash
-git diff main..stage/1-dispatch              # What stage 1 adds to the shell
-git diff stage/1-dispatch..stage/2-dag       # What stage 2 adds
-git diff stage/2-dag..stage/3-full           # What stage 3 adds
+git diff main..orchestration/1-dispatch                        # What stage 1 adds to the lobby
+git diff orchestration/1-dispatch..orchestration/2-dag         # What stage 2 adds
+git diff orchestration/2-dag..orchestration/3-full             # What stage 3 adds
 ```
 
 Each diff shows exactly what a stage introduces -- no noise from unrelated changes.
+
+GitHub compare URLs are also available in the `/learn` command and main README.
 
 ---
 
@@ -352,5 +478,9 @@ Each diff shows exactly what a stage introduces -- no noise from unrelated chang
 - **Resume on retry** -- `resume: agentId` preserves builder's prior context
 - **Spec re-read at each wave** -- context compaction can evict the plan
 - **Prototype before plugin** -- iterate fast, prove HOP works, then extract
-- **Cumulative branches, main holds latest state** -- each stage branches from the previous one, merged to main when complete. Optimizes for readers (checkout-and-run, progressive diffs) over maintainers (cherry-pick cascade on fixes). Acceptable tradeoff for a bounded 9-stage learning repo
-- **Pattern docs grow progressively** -- each stage adds new patterns to `docs/patterns/`
+- **Main = lobby, not latest state** -- main is the knowledge plane (learning tools, patterns). Module branches own the execution plane (orchestrator, agents). This prevents SKILL.md bloat and keeps the educational story clean. (see `docs/plans/2026-02-23-refactor-lobby-branch-restructure-plan.md`)
+- **Module branches, not stage branches** -- `orchestration/N-name` naming supports multiple learning modules on the same lobby. Future modules: `prompt-eng/*`, `research/*`, etc.
+- **Module branches are immutable** -- frozen after creation. No post-creation commits. Guarantees stable diffs, accurate source anchors, and reproducible learning experiences.
+- **Pattern docs grow progressively** -- each stage adds new patterns to `docs/patterns/`. The lobby has all patterns; each module branch has the cumulative subset to that stage.
+- **`docs/patterns/` is the portable source of truth** -- pattern content lives at a standard repo path, accessible to any tool or plugin. `.claude/references/patterns/` has structured frontmatter refs that the dojo reads.
+- **Dojo as future plugin** -- the dojo and `/learn` should eventually be marketplace plugins, always available regardless of branch. Until then, `/lobby` command and cross-branch `git show` hints bridge the gap.

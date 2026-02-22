@@ -11,6 +11,18 @@ description: >-
   refinement. Also use when an agent queries for pattern guidance.
 argument-hint: "e.g. 'explain wave computation' or 'lookup retry'"
 allowed-tools: Read, Glob, Grep
+hooks:
+  Stop:
+    - hooks:
+        - type: prompt
+          prompt: >-
+            Check if the assistant's response contains a fenced code block
+            with the info string `dojo-envelope`. The block must contain
+            YAML with at least these fields: mode_selected, pattern_selected,
+            route_reason. If the envelope block is missing or incomplete,
+            respond with STOP_REASON: "Response is missing the required
+            dojo-envelope block. Add it before finishing." If the envelope
+            is present and valid, allow the response.
 ---
 
 # Agentic Dojo

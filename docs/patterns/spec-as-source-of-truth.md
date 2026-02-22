@@ -76,6 +76,9 @@ The orchestrator writes the spec file to `specs/<descriptive-name>.md` after com
 ## Execution Log
 (populated during execution)
 
+## Hydration Checkpoint
+(written after every state-changing event; used for cross-session resume)
+
 ## Result
 (written after all waves complete or on failure)
 ```
@@ -141,6 +144,59 @@ This is not a workaround -- it is correct architecture. An orchestrator that dep
 **IndyDevDan's framing:** "The spec is the source of truth, not the conversation context." This principle -- that the plan should live outside the LLM's volatile working memory -- is the foundation of the spec-as-source-of-truth pattern. External, durable, re-readable.
 
 **Community consensus:** Long-running agent workflows (multi-hour, multi-session) consistently require durable plans that survive context window limits. The community has converged on writing plans to disk (as files, database rows, or workflow state) and re-reading them at execution boundaries. The spec file is this repo's implementation of that consensus.
+
+---
+
+## Hydration Extension (Stage 7)
+
+Stage 7 extends the spec file with a `## Hydration Checkpoint` section, making the spec file serve three distinct roles:
+
+1. **Plan** -- the full task graph and acceptance criteria, written before any agent runs
+2. **Audit trail** -- the append-only Execution Log recording every dispatch, verdict, retry, and bounce-back
+3. **Checkpoint** -- volatile orchestration state captured after every state-changing event, enabling cross-session resume
+
+### What the Checkpoint Captures
+
+The Hydration Checkpoint records state that exists only in memory during an active orchestration run and would otherwise be lost on interruption:
+
+- Orchestration ID -- a unique identifier for the run
+- Team -- which team profile is active (`engineering`, `research`, etc.)
+- Current wave -- which wave is executing
+- Wave progress -- which tasks in the current wave have completed and which are pending
+- Agent session IDs -- the `agentId` values for in-flight builder dispatches (needed to resume rather than re-dispatch from scratch)
+- Retry state -- per-task retry counter, so retries survive a restart
+- Bounce history -- which tasks have been bounced back to the orchestrator with findings, and the finding content
+
+### When It Is Written
+
+The checkpoint is rewritten after every state-changing event:
+
+- Builder dispatched (captures agentId)
+- Validator verdict received (PASS or FAIL)
+- Retry initiated
+- Bounce-back received from builder
+- Wave completed
+- Orchestration paused or interrupted
+
+Writing after every event means the checkpoint is always at most one event stale. If the session is interrupted between events, the worst case is re-running a single agent dispatch -- not re-running an entire wave.
+
+### Cross-Session Resume
+
+When `/orchestrate` is invoked and a spec file already exists for the same prompt, the orchestrator:
+
+1. Reads the spec file
+2. Detects the Hydration Checkpoint section
+3. Restores state: current wave, wave progress, per-task retry counters
+4. Skips tasks whose Status is `completed`
+5. Re-dispatches tasks whose Status is `in_progress` using the saved agentId where available
+
+This extends the idempotent resumption property from Stage 2 (task-level skipping based on Status) to full orchestration-level resumption (wave position, retry counts, bounce history).
+
+### Single Source of Truth -- Maintained
+
+The checkpoint lives inside the spec file, not in a separate database or sidecar file. All orchestration state -- plan, audit trail, and checkpoint -- lives in one place. This maintains the core principle: if you have the spec file, you have everything needed to understand, audit, or resume the orchestration.
+
+Reference: `.claude/skills/orchestrator/references/hitl-protocol.md` for the full checkpoint format and field-by-field description.
 
 ---
 

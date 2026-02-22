@@ -12,7 +12,7 @@ origin: docs/plans/agentic-dojo-skill/2026-02-21-feat-agentic-dojo-skill-plan.md
 
 **Deepened on:** 2026-02-22
 **Research agents used:** agent-native-architecture, create-agent-skills, architecture-strategist, pattern-recognition-specialist, agent-native-reviewer, code-simplicity-reviewer, best-practices-researcher, dojo-compatibility-analyzer
-**Review passes:** 8 parallel agents
+**Review passes:** 8 parallel agents + 4 claude-code-guide agents (skills architecture, agent dispatch patterns, SKILL.md sizing, envelope/observability)
 
 ### Key Improvements from Deepening
 
@@ -121,7 +121,7 @@ $ARGUMENTS
 │  single   ───────────────▶ Existing cascade (unchanged)
 │  compare  ───────────────▶ Compare routing (2 patterns)
 │  disambiguation ─────────▶ "3+ patterns. Which pair?" message
-│  follow-up ──────────────▶ Context resolution, then re-classify (max 1 re-entry)
+│  follow-up ──────────────▶ Context resolution, then re-clas  sify (max 1 re-entry)
 │  structured follow-up ───▶ --context-pattern flag, skip resolution
 └──────────────────────────┘
 ```
