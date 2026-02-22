@@ -1,43 +1,84 @@
-# bun-typescript-starter
+# Orchestrator Prototype
 
-A production-ready TypeScript/Bun project template with CI/CD, linting, testing, and publishing infrastructure.
+An educational repository for learning agent orchestration patterns incrementally. Each git branch (`stage/1-dispatch`, `stage/2-dag`, etc.) is a standalone lesson - checkout any stage to see the orchestrator at that complexity level.
 
-**Stack:** TypeScript, Bun, Biome, Vitest, Changesets
+**Stack:** TypeScript, Bun, Biome, Claude Code agents/skills/commands
 
 ---
 
-## Quick Start
+## What This Repo Is
 
-```bash
-# After "Use this template" on GitHub
-bun run setup    # Interactive configuration
-bun install      # Install dependencies (if not done by setup)
-bun dev          # Watch mode development
-bun test         # Run tests
-bun run build    # Build for production
+This is a prototype of the HOP (Higher-Order Prompt) Orchestrator - a prompt that takes other prompts as parameters, like a higher-order function. The fixed wrapper handles orchestration (task creation, agent dispatch, validation). The variable parameters handle identity (which builder, which validator, which team).
+
+Stage 3 completes the Phase 1 feature set. On top of the Stage 2 DAG execution foundation, it adds: clarifying questions (the orchestrator detects vague prompts and asks the user to narrow scope before decomposing), fast path (simple single-file prompts bypass DAG decomposition entirely and go straight to a builder + validator dispatch), retry with resume (failed tasks retry up to 3 times using `resume: agentId` to preserve builder context, with user escalation if all retries fail), iterative plan refinement (after writing the spec, the orchestrator presents the task graph to the user for review and accepts modifications before dispatching any agents), and token cost estimation (estimated token cost shown by wave before the first agent is dispatched).
+
+**Learning tool first.** Built incrementally so each stage teaches one concept. When finished, it doubles as an educational resource for others.
+
+**See:** `specs/master-plan.md` for the full roadmap, `docs/patterns/` for pattern explanations.
+
+---
+
+## Project Structure
+
+```
+.claude/
+  agents/           # Agent definitions (builder, validator, etc.)
+  commands/         # User-facing commands (/orchestrate)
+  skills/           # Skill definitions (orchestrator SKILL.md)
+    orchestrator/
+      references/   # Technical references (dag-execution.md)
+  settings.json     # Tool permissions
+
+specs/              # Spec files written by the orchestrator before agent dispatch + master plan
+specs/examples/     # Gallery of example spec outputs per stage
+prompts/            # Curated test prompts per stage
+docs/patterns/      # Pattern docs - what, how, why (progressive per stage)
+src/                # Source code (target for orchestrated tasks)
+tests/              # Tests
 ```
 
 ---
 
-## Key Commands
+## How to Use
 
 ```bash
-# Development
-bun dev                  # Watch mode
-bun build                # Build TypeScript to dist/
+# Clarifying questions (vague prompt)
+/orchestrate "add authentication"
+# The orchestrator will:
+# 1. Detect the prompt is vague (no files, no strategy specified)
+# 2. Ask clarifying questions (auth strategy, target files, session handling)
+# 3. Re-parse with enriched context, then decompose and execute
 
-# Quality
-bun run check            # Biome lint + format (write mode)
-bun typecheck            # TypeScript type checking
-bun run validate         # Full quality check (lint + types + build + test)
+# Fast path (simple prompt)
+/orchestrate "add JSDoc to the greet function in src/hello.ts"
+# The orchestrator will:
+# 1. Detect this is a single, simple change (1 file, < 20 lines)
+# 2. Skip DAG decomposition -- dispatch builder + validator directly
+# 3. Report result
 
-# Testing
-bun test                 # Run all tests
-bun test --coverage      # With coverage report
+# Full flow (multi-task with plan review)
+/orchestrate "add a REST API with GET /users, POST /users, and GET /users/:id"
+# The orchestrator will:
+# 1. Decompose into tasks with dependency waves
+# 2. Write a spec file, present the plan for your review
+# 3. Show estimated token cost
+# 4. Execute wave by wave with retry on failures
+# 5. Report enhanced summary with retry stats and cost
 
-# Releases
-bun version:gen          # Create changeset
+# Retry scenario
+# If a builder fails validation, the orchestrator:
+# 1. Retries the builder up to 3x (using resume to preserve context)
+# 2. If still failing after 3 retries, asks you what to do
+# 3. Options: skip the task, provide guidance, or abort
 ```
+
+---
+
+## Agent Conventions
+
+- **Builder** (sonnet): Writes code. Reads before writing. File boundaries are absolute. Reports changes.
+- **Validator** (haiku): Read-only. Reports VERDICT: PASS or VERDICT: FAIL. Never modifies files.
+- **Orchestrator** (opus): Never writes code. Creates tasks, dispatches agents, reports results.
 
 ---
 
@@ -50,110 +91,49 @@ bun version:gen          # Create changeset
 | Types | PascalCase (`MyType`) |
 | Exports | Named only (no defaults) |
 | Formatting | Biome (tabs, single quotes, 80-char) |
+| Exports | Every exported function gets JSDoc |
 
 ---
 
-## Git Workflow
-
-**Branch pattern:** `type/description` (e.g., `feat/add-feature`, `fix/bug-fix`)
-
-**Commit format:** Conventional Commits (enforced by commitlint)
-
-```
-feat(scope): add new feature
-fix(scope): fix bug
-chore(deps): update dependencies
-```
-
-**Before pushing:** Always run `bun run validate`
-
----
-
-## Template Development Workflow
-
-When dogfooding this template (testing it in a real project), use this workflow to push fixes back upstream.
-
-### Setup (one-time)
+## Key Commands
 
 ```bash
-# Create a new repo from template via GitHub UI
-# Clone it locally
-git clone git@github.com:youruser/your-new-project.git
-cd your-new-project
-
-# Add template as upstream remote
-git remote add template git@github.com:nathanvale/bun-typescript-starter.git
+bun dev                  # Watch mode
+bun build                # Build TypeScript to dist/
+bun run check            # Biome lint + format
+bun typecheck            # TypeScript type checking
+bun run validate         # Full quality check
+bun test                 # Run all tests
 ```
 
-### Pushing Fixes Upstream
+---
 
-When you find an issue in the template while using it:
+## Branch Strategy
+
+**Cumulative chain:** each stage branches from the previous stage, not from main. Main is a bare shell (template, config, master plan) -- it never receives stage merges.
 
 ```bash
-# 1. Fix the issue in your dogfood project
-# 2. Commit the fix
-git add .
-git commit -m "fix: description of the fix"
+# Starting a new stage
+git checkout stage/N-1-name && git checkout -b stage/N-name
 
-# 3. Push to your project's origin (optional, for your project)
-git push origin main
-
-# 4. Push to template upstream
-git push template HEAD:main
+# Diff commands for readers
+git diff main..stage/1-dispatch              # What stage 1 adds to the shell
+git diff stage/1-dispatch..stage/2-dag       # What stage 2 adds
+git diff stage/2-dag..stage/3-full           # What stage 3 adds
 ```
 
-### Pulling Template Updates
-
-```bash
-# Fetch latest from template
-git fetch template
-
-# Merge template changes into your project
-git merge template/main --allow-unrelated-histories
-```
+See `specs/master-plan.md` "Branch Strategy" for full rules.
 
 ---
 
-## Publishing
+## What This Stage Does NOT Do
 
-This template uses **OIDC Trusted Publishing** for npm releases.
+This is Stage 3 (Full Phase 1). The following capabilities are intentionally absent -- they are added in later stages:
 
-### First Publish (requires NPM_TOKEN)
-
-1. Add `NPM_TOKEN` secret to GitHub repo settings
-2. Create a changeset: `bun version:gen`
-3. Push to main, merge the "Version Packages" PR
-
-### After First Publish (OIDC)
-
-1. Configure trusted publisher at: https://www.npmjs.com/package/YOUR_PACKAGE/access
-2. Remove `NPM_TOKEN` secret (no longer needed)
-3. Future publishes authenticate via GitHub OIDC
-
----
-
-## CI/CD Workflows
-
-| Workflow | Trigger | Purpose |
-|----------|---------|---------|
-| `pr-quality.yml` | PR | Lint, types, tests |
-| `publish.yml` | Push to main | Version & publish |
-| `autogenerate-changeset.yml` | PR | Auto-generate changeset if missing |
-| `commitlint.yml` | PR | Validate commit messages |
-| `security.yml` | Schedule/PR | CodeQL + Trivy scans |
-
-**GitHub App:** [Changeset Bot](https://github.com/apps/changeset-bot) — comments on PRs with changeset status (install per-repo)
-
----
-
-## Customization
-
-After running `bun run setup`:
-
-1. **Add source files** in `src/`
-2. **Add tests** alongside source (`*.test.ts`)
-3. **Update exports** in `bunup.config.ts`
-4. **Configure path aliases** in `tsconfig.json` if needed
+- **No parallel wave execution** -- tasks within a wave run sequentially, one at a time (Stage 8)
+- **No --team switching** -- builder and validator are hardcoded in HOP Configuration (Stage 4)
+- **No persistent state store** -- orchestration state lives only in the spec file on disk; there is no external database or resume server (Stage 7)
+- **No live API cost data** -- token estimation uses fixed per-dispatch assumptions, not actual usage reported by the API (future)
 
 ---
 
@@ -162,14 +142,15 @@ After running `bun run setup`:
 ### ALWAYS
 
 1. Run `bun run validate` before pushing
-2. Create changesets for user-facing changes
-3. Use named exports (no defaults)
+2. Use named exports (no defaults)
+3. Add JSDoc to exported functions
 
 ### NEVER
 
-1. Push directly to main (pre-push hook blocks)
+1. Push directly to main
 2. Skip validation before commits
 3. Use destructive git commands (`reset --hard`, `push --force`)
+4. Let the orchestrator write code directly (it dispatches agents)
 
 ## Adding a New Pattern
 
