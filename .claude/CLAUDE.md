@@ -10,9 +10,9 @@ An educational repository for learning agent orchestration patterns incrementall
 
 This is a prototype of the HOP (Higher-Order Prompt) Orchestrator - a prompt that takes other prompts as parameters, like a higher-order function. The fixed wrapper handles orchestration (task creation, agent dispatch, validation). The variable parameters handle identity (which builder, which validator, which team).
 
-Stage 4 completes the HOP proof. On top of the Stage 3 full feature set, it adds: team switching via the `--team` flag, team profile resolution (the orchestrator reads `.claude/skills/orchestrator/teams/<name>.md` to resolve agent identities before doing anything else), and two new agents (`research-builder` with WebSearch/WebFetch, `research-validator` with WebFetch for citation verification).
+Stage 5 is the plugin extraction stage. The SKILL.md is **identical to Stage 4** -- no new orchestrator capabilities are added. The value of this stage is documentation: a pattern doc explaining how the prototype gets extracted into the `side-quest-plugins` marketplace as the `agentic-orchestration` plugin.
 
-The proof: run the same 12-step dispatch protocol with `--team engineering` (writes code) and `--team research` (writes research reports). The protocol steps are identical. Only `BUILDER_AGENT` and `VALIDATOR_AGENT` differ. The orchestration wrapper is domain-agnostic -- a pure function of agent identities and user prompt.
+The prototype repo remains as-is for learning: readers can checkout any stage branch and see the orchestrator at that complexity level. The living, maintained implementation now lives in the plugin. Install with `/plugin install agentic-orchestration@side-quest`.
 
 **Learning tool first.** Built incrementally so each stage teaches one concept. When finished, it doubles as an educational resource for others.
 
@@ -45,7 +45,7 @@ tests/              # Tests
 ## How to Use
 
 ```bash
-# Default team (engineering) -- same as stage 3
+# Default team (engineering) -- same as stage 4
 /orchestrate "add a REST API with GET /users, POST /users, and GET /users/:id"
 
 # Explicit engineering team
@@ -54,11 +54,24 @@ tests/              # Tests
 # Research team -- proves the HOP pattern
 /orchestrate "research top 5 TypeScript testing frameworks and compare them" --team research
 
-# The HOP proof:
+# The HOP proof (unchanged from stage 4):
 # Both commands above run the IDENTICAL 12-step protocol.
 # Only BUILDER_AGENT and VALIDATOR_AGENT differ.
 # Orchestrator logic: unchanged.
 ```
+
+---
+
+## What This Stage Adds
+
+Stage 5 adds one thing: documentation about plugin extraction.
+
+- `docs/patterns/plugin-architecture.md` -- the Plugin Architecture pattern doc (new)
+- `docs/patterns/team-profiles.md` -- the Team Profiles pattern doc (new, should have been in stage 4)
+- `prompts/stage-5/` -- test prompts for this stage (new)
+- Updated `CLAUDE.md`, `README.md`, `commands/lobby.md` -- stage 5 identity
+
+**SKILL.md is identical to Stage 4.** 769 lines. No orchestrator changes.
 
 ---
 
@@ -113,8 +126,8 @@ bun test                 # Run all tests
 
 ```bash
 # Diff commands for readers
-git diff orchestration/3-full..orchestration/4-hop    # What stage 4 adds (team switching)
-git diff orchestration/2-dag..orchestration/3-full    # What stage 3 adds
+git diff orchestration/4-hop..orchestration/5-plugin    # What stage 5 adds (plugin extraction docs)
+git diff orchestration/3-full..orchestration/4-hop      # What stage 4 adds (team switching)
 ```
 
 See `specs/master-plan.md` "Branch Strategy" for full rules.
@@ -123,13 +136,13 @@ See `specs/master-plan.md` "Branch Strategy" for full rules.
 
 ## What This Stage Does NOT Do
 
-This is Stage 4 (Team Switching). The following capabilities are intentionally absent -- they are added in later stages:
+This is Stage 5 (Plugin Extraction). The following capabilities are intentionally absent -- they are added in later stages:
 
-- **No parallel wave execution** -- tasks within a wave run sequentially, one at a time (Stage 8)
 - **No difficulty routing** -- no Codex CLI escalation for hard tasks (Stage 6)
 - **No spec hardening** -- vague task descriptions are not rewritten before dispatch (Stage 6)
 - **No HITL bounce-back** -- the orchestrator cannot pause mid-execution to consult the user (Stage 7)
 - **No persistent state store** -- resuming requires re-reading the spec file; there is no hydration checkpoint (Stage 7)
+- **No parallel wave execution** -- tasks within a wave run sequentially, one at a time (Stage 8)
 - **No live API cost data** -- token estimation uses fixed per-dispatch assumptions (future)
 
 ---
@@ -161,6 +174,9 @@ To read files from any branch without checking out:
 # Read pattern docs from main while on this branch
 git show main:docs/patterns/higher-order-prompt.md
 
-# See what stage 4 adds over stage 3
+# See what stage 5 adds over stage 4
+git diff orchestration/4-hop..orchestration/5-plugin --stat
+
+# See what stage 4 added over stage 3
 git diff orchestration/3-full..orchestration/4-hop --stat
 ```
