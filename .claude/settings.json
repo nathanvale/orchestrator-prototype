@@ -1,31 +1,9 @@
 {
-  "mcpServers": {
-    "x-api": {
-      "command": "bunx",
-      "args": ["--bun", "@side-quest/x-api"],
-      "env": {
-        "X_BEARER_TOKEN": "${X_BEARER_TOKEN}"
-      }
-    }
-  },
   "permissions": {
     "allow": [
-      "Task",
-      "TaskCreate",
-      "TaskUpdate",
-      "TaskList",
-      "TaskGet",
-      "TaskOutput",
       "Read",
-      "Write",
-      "Edit",
       "Glob",
-      "Grep",
-      "Bash(bun *)",
-      "Bash(git *)",
-      "Bash(ls *)",
-      "Bash(mkdir *)",
-      "Bash(bun run scripts/emit-event.ts *)"
+      "Grep"
     ]
   }
 }
