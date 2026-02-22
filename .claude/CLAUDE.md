@@ -110,14 +110,10 @@ bun test                 # Run all tests
 
 ## Branch Strategy
 
-**Cumulative chain:** each stage branches from the previous stage, not from main. Main is a bare shell (template, config, master plan) -- it never receives stage merges.
+**Cumulative chain:** each stage branches from the previous stage. Main holds the latest complete state. Stage branches are permanent snapshots for readers.
 
 ```bash
-# Starting a new stage
-git checkout stage/N-1-name && git checkout -b stage/N-name
-
 # Diff commands for readers
-git diff main..stage/1-dispatch              # What stage 1 adds to the shell
 git diff stage/1-dispatch..stage/2-dag       # What stage 2 adds
 git diff stage/2-dag..stage/3-full           # What stage 3 adds
 ```

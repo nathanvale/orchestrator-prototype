@@ -278,10 +278,10 @@ Each gets its own detailed plan before implementation. See stage descriptions in
 
 ## Branch Strategy - Cumulative Chain
 
-**Branch model: cumulative chain.** Each stage branches from the previous stage (not from main). This means each branch contains everything from prior stages plus its own additions. Branches are never deleted -- they serve as permanent, runnable snapshots. Main stays as a clean shell (template baseline, config, master plan) -- it never receives stage merges.
+**Branch model: cumulative chain.** Each stage branches from the previous stage. Main holds the latest complete state. This means each branch contains everything from prior stages plus its own additions. Branches are never deleted -- they serve as permanent, runnable snapshots.
 
 ```
-main (bare shell -- no stage implementations)
+main (latest complete state)
   |
   +-- stage/1-dispatch
         |
@@ -304,19 +304,19 @@ main (bare shell -- no stage implementations)
 
 ### What lives on main
 
-Main is the bare scaffold -- a "table of contents," not a chapter:
+Main holds the latest complete state -- all stage implementations merged when complete:
 
-- Starter template (`package.json`, `tsconfig.json`, `biome.json`, CI config)
+- Full project config (`package.json`, `tsconfig.json`, `biome.json`, CI config)
 - `specs/master-plan.md` (this file)
-- Minimal `CLAUDE.md` pointing readers to stage branches
-- **No** stage implementations, agents, skills, or pattern docs
+- `CLAUDE.md` with full project conventions
+- All stage implementations, agents, skills, and pattern docs
 
 ### Rules for starting a new stage
 
 1. Checkout the previous stage branch: `git checkout stage/N-1-name`
 2. Create the new branch: `git checkout -b stage/N-name`
 3. Implement the stage
-4. Push the branch -- **never merge to main**
+4. Push the branch -- merge to main when complete
 
 ### Branch protection
 
@@ -352,5 +352,5 @@ Each diff shows exactly what a stage introduces -- no noise from unrelated chang
 - **Resume on retry** -- `resume: agentId` preserves builder's prior context
 - **Spec re-read at each wave** -- context compaction can evict the plan
 - **Prototype before plugin** -- iterate fast, prove HOP works, then extract
-- **Cumulative branches, clean main** -- main is a shell, each stage branches from the previous one. Optimizes for readers (checkout-and-run, progressive diffs) over maintainers (cherry-pick cascade on fixes). Acceptable tradeoff for a bounded 9-stage learning repo
+- **Cumulative branches, main holds latest state** -- each stage branches from the previous one, merged to main when complete. Optimizes for readers (checkout-and-run, progressive diffs) over maintainers (cherry-pick cascade on fixes). Acceptable tradeoff for a bounded 9-stage learning repo
 - **Pattern docs grow progressively** -- each stage adds new patterns to `docs/patterns/`
