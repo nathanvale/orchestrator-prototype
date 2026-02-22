@@ -98,11 +98,9 @@ tests/              # Tests
 ## Key Commands
 
 ```bash
-bun dev                  # Watch mode
-bun build                # Build TypeScript to dist/
 bun run check            # Biome lint + format
 bun typecheck            # TypeScript type checking
-bun run validate         # Full quality check
+bun run validate         # Full quality check (lint + typecheck + test)
 bun test                 # Run all tests
 ```
 
