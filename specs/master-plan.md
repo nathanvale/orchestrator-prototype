@@ -118,14 +118,15 @@ A Higher-Order Prompt -- a prompt that takes another prompt as a parameter (like
 |-------|--------|--------|
 | 1 | `stage/1-dispatch` | Complete -- 6 commits, patterns documented |
 | 2 | `stage/2-dag` | Complete -- 6 commits, specs/patterns/skill written |
-| 3 | `stage/3-full` | Next up |
+| 3 | `stage/3-full` | Complete -- 4 commits, patterns documented |
 | 4-9 | not yet created | Planned |
 
 **Last checkpoint:** Commit history rewritten for educational clarity -- each commit maps to a logical step in the file tables below. Both stage branches force-pushed with clean history.
 
-**Next step:** Create `stage/3-full` from `stage/2-dag` and implement retry, clarifying questions, fast path, plan refinement, spec re-read, token estimation, and summary.
+**Next step:** Create `stage/4-hop` from `stage/3-full` and implement HOP parameterization with `--team` switching.
 
 ---
+
 
 ## Stage 1: Minimum Viable Dispatch
 
@@ -316,6 +317,12 @@ Main is the bare scaffold -- a "table of contents," not a chapter:
 2. Create the new branch: `git checkout -b stage/N-name`
 3. Implement the stage
 4. Push the branch -- **never merge to main**
+
+### Branch protection
+
+All stage branches have GitHub branch protection rules preventing deletion. These are permanent educational snapshots -- deleting any branch breaks the learning path. Protection is applied via a `stage/*` wildcard rule.
+
+When creating a new stage branch, it's automatically covered by the wildcard rule -- no manual setup needed.
 
 ### Rules for fixing earlier stages
 
