@@ -150,3 +150,17 @@ This is Stage 3 (Full Phase 1). The following capabilities are intentionally abs
 1. Push directly to main
 2. Use destructive git commands (`reset --hard`, `push --force`)
 3. Let the orchestrator write code directly (it dispatches agents)
+
+---
+
+## Cross-Branch Access
+
+To return to the lobby: `git checkout main`
+
+On main you have access to `/learn`, `/dojo`, and `/advisor` for pattern learning.
+
+To read pattern docs from main without leaving this branch:
+```bash
+git show main:docs/patterns/retry-with-resume.md
+git show main:docs/patterns/fast-path-gate.md
+```
