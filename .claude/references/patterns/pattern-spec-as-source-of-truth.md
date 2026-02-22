@@ -116,4 +116,11 @@ The `spec.reread` event is emitted each time the spec is re-read at a wave bound
 
 ## Source Anchors
 
-Source: `docs/patterns/spec-as-source-of-truth.md` on `stage/3-full`
+Stage 2 (concept introduction):
+- `orchestration/2-dag:.claude/skills/orchestrator/SKILL.md:L140-L200` -- spec file written before agent dispatch, task graph table format, execution log
+
+Stage 3 (full proof):
+- `orchestration/3-full:.claude/skills/orchestrator/SKILL.md:L200-L280` -- spec re-read at wave boundaries, idempotent resumption via status check, spec.reread event
+
+Stage 7 (extension -- hydration checkpoints):
+- Planned -- orchestration/7-hitl (not yet created)

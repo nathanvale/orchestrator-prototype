@@ -52,10 +52,12 @@ Examples:
   /advisor "My agent keeps failing mid-run and I need it to recover"
   /advisor "I want one prompt to drive multiple different agent types"
 
-Available patterns (9 total):
-  builder-validator    dispatch-loop     higher-order-prompt
-  task-dag             wave-computation  spec-as-source-of-truth
-  retry-with-resume    fast-path-gate    iterative-refinement
+Available patterns (15 total):
+  builder-validator    dispatch-loop       higher-order-prompt
+  task-dag             wave-computation    spec-as-source-of-truth
+  retry-with-resume    fast-path-gate      iterative-refinement
+  team-profiles        plugin-architecture difficulty-routing
+  spec-hardening       hitl-protocol       hydration-pattern
 
 If $ARGUMENTS is too vague to extract any characteristics (e.g. a single
 word with no context), ask for clarification instead of guessing:
@@ -80,10 +82,16 @@ Extract signals from $ARGUMENTS. For each signal present, note it:
 | parallel-execution | parallel, concurrent, at the same time, simultaneously |
 | long-running | long, multi-step, extended, hours, many rounds |
 | structured-output | YAML, structured, machine-readable, downstream agent |
+| role-switching | different agents, team switch, research vs engineering, swap agents |
+| extraction | extract, plugin, distribute, marketplace, reusable across projects |
+| escalation | hard tasks, complex refactor, more capable engine, codex |
+| vague-input | ambiguous, unclear spec, missing file paths, vague criteria |
+| ambiguity | design conflict, conflicting patterns, architectural decision |
+| cross-session | resume session, interrupted, overnight, long pause, session ended |
 
 ### Pattern Scoring
 
-Score each of the 9 patterns against the extracted characteristics.
+Score each of the 15 patterns against the extracted characteristics.
 A pattern scores higher when more of its when_to_use and signals_diagnostics
 content aligns with the extracted signals.
 
@@ -100,6 +108,12 @@ Scoring guide (approximate relevance):
 | higher-order-prompt | parameterization + multiple agent types |
 | fast-path-gate | complexity-varies (simple vs complex routing) |
 | iterative-refinement | iterative-feedback + clarify + improve |
+| team-profiles | parameterization + role-switching + multiple agent types |
+| plugin-architecture | extraction + parameterization (reusability across projects) |
+| difficulty-routing | complexity-varies + escalation + parallel-execution |
+| spec-hardening | vague-input + verification-needed + iterative-feedback |
+| hitl-protocol | ambiguity + iterative-feedback + long-running |
+| hydration-pattern | persistent-state + cross-session + failure-recovery |
 
 Minimum threshold: a pattern must match at least 1 characteristic signal
 to appear in recommendations. If fewer than 3 patterns meet threshold,
@@ -107,7 +121,7 @@ include the closest matches and note low confidence.
 
 If no patterns score above threshold, say so explicitly:
 
-  "The description provided does not map clearly to any of the 9 patterns
+  "The description provided does not map clearly to any of the 15 patterns
   in my reference. Might I suggest elaborating on the problem structure,
   failure modes, or agent coordination needs?"
 

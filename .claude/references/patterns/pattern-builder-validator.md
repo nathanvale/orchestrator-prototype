@@ -92,4 +92,10 @@ The Validator's prompt should reference the same task description the Builder re
 
 ## Source Anchors
 
-Source: `docs/patterns/builder-validator.md` on `stage/3-full`
+Stage 1 (concept introduction):
+- `orchestration/1-dispatch:.claude/skills/orchestrator/SKILL.md:L1-L50` -- Builder and Validator agents dispatched in sequence
+
+Stage 3 (full proof):
+- `orchestration/3-full:.claude/skills/orchestrator/SKILL.md:L1-L100` -- builder/validator with retry logic and foreground dispatch
+- `orchestration/3-full:.claude/agents/builder.md` -- Builder agent definition with allowed tools
+- `orchestration/3-full:.claude/agents/validator.md` -- Validator agent definition with disallowedTools

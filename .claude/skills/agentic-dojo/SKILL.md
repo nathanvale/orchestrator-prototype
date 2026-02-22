@@ -53,9 +53,11 @@ Modes:
   lookup <pattern>     Quick reference with structured output
 
 Patterns:
-  builder-validator    dispatch-loop     higher-order-prompt
-  task-dag             wave-computation  spec-as-source-of-truth
-  retry-with-resume    fast-path-gate    iterative-refinement
+  builder-validator    dispatch-loop       higher-order-prompt
+  task-dag             wave-computation    spec-as-source-of-truth
+  retry-with-resume    fast-path-gate      iterative-refinement
+  team-profiles        plugin-architecture difficulty-routing
+  spec-hardening       hitl-protocol       hydration-pattern
 
 Examples:
   /dojo explain wave computation    (short forms: wave, dag, spec, hop...)
@@ -102,6 +104,12 @@ conversation context (agent invocations) default to Reference.
 | builder, validator | builder-validator |
 | dispatch, loop | dispatch-loop |
 | refine, iterate | iterative-refinement |
+| team, profiles, switching | team-profiles |
+| plugin, marketplace, extract | plugin-architecture |
+| difficulty, routing, codex, escalat | difficulty-routing |
+| harden, hardening, ambiguity | spec-hardening |
+| hitl, bounce, bounce-back, human-loop | hitl-protocol |
+| hydrat, checkpoint, persist, cross-session | hydration-pattern |
 
 **2. Keyword table** -- if no alias matched.
 
@@ -116,6 +124,12 @@ conversation context (agent invocations) default to Reference.
 | retry, resume, failure, recover, idempotent | Retry with Resume | .claude/references/patterns/pattern-retry-with-resume.md |
 | fast path, simple, skip, gate, threshold | Fast Path Gate | .claude/references/patterns/pattern-fast-path-gate.md |
 | refine, iterate, clarify, improve, feedback | Iterative Refinement | .claude/references/patterns/pattern-iterative-refinement.md |
+| team, profile, switching, inject, domain | Team Profiles | .claude/references/patterns/pattern-team-profiles.md |
+| plugin, marketplace, extract, distribute, install | Plugin Architecture | .claude/references/patterns/pattern-plugin-architecture.md |
+| difficulty, route, codex, escalate, hard task, capability | Difficulty Routing | .claude/references/patterns/pattern-difficulty-routing.md |
+| harden, hardening, ambiguous, concrete, acceptance criteria | Spec Hardening | .claude/references/patterns/pattern-spec-hardening.md |
+| HITL, human-in-the-loop, bounce-back, pause, mid-execution | HITL Protocol | .claude/references/patterns/pattern-hitl-protocol.md |
+| hydration, checkpoint, cross-session, resume state, persist state | Hydration Pattern | .claude/references/patterns/pattern-hydration-pattern.md |
 | (no pattern match) | -- | Show pattern index and ask user to clarify |
 
 **3. Conversation fallback** -- if no pattern detected from $ARGUMENTS,
@@ -139,9 +153,7 @@ no pattern matches.
 
 - Never writes code, creates files, or modifies the codebase
 - Never executes scripts or runs commands
-- Does not cover patterns from stages 4-9 (team profiles, HITL, parallel dispatch, etc.)
-- Does not cover Parallel Dispatch (stage 8) -- distinct from wave-level parallelism
-- Does not cover Difficulty Routing (stage 6) -- distinct from Fast Path Gate
+- Does not cover Parallel Dispatch (Stage 8) -- distinct from wave-level parallelism; not yet documented
 - Does not replace the orchestrator skill -- this teaches patterns, that executes them
 - Does not compare patterns side-by-side (v2 consideration)
 
