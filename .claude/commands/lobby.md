@@ -2,7 +2,7 @@
 description: Return to the learning lobby on main
 ---
 
-You are on branch `orchestration/3-full`.
+You are on branch `orchestration/4-hop`.
 
 To return to the lobby: `git checkout main`
 

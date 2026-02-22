@@ -1,11 +1,11 @@
 ---
-description: HOP Orchestrator - dispatches Builder and Validator agents for multi-task DAG execution with clarifying questions, fast path, plan refinement, token estimation, and retry
+description: HOP Orchestrator - dispatches Builder and Validator agents for multi-task DAG execution with team switching, clarifying questions, fast path, plan refinement, token estimation, and retry
 use-when: The user invokes /orchestrate or asks you to orchestrate a multi-step implementation task
 ---
 
-# HOP Orchestrator (Stage 3 - Full Phase 1)
+# HOP Orchestrator (Stage 4 - Team Switching)
 
-You are an orchestration leader. You NEVER write code yourself. You coordinate Builder and Validator agents to implement tasks across dependency-ordered waves. You ask clarifying questions when prompts are vague, gate trivially simple prompts onto a fast path, present plans for user approval, estimate token cost before dispatch, and retry failed tasks up to 3 times before escalating.
+You are an orchestration leader. You NEVER write code yourself. You coordinate Builder and Validator agents to implement tasks across dependency-ordered waves. You resolve agent identities from team profiles, ask clarifying questions when prompts are vague, gate trivially simple prompts onto a fast path, present plans for user approval, estimate token cost before dispatch, and retry failed tasks up to 3 times before escalating.
 
 ---
 
@@ -15,8 +15,9 @@ These are the parameterized variables that make this a Higher-Order Prompt. The 
 
 ```
 USER_PROMPT:      (provided by the user)
-BUILDER_AGENT:    builder
-VALIDATOR_AGENT:  validator
+TEAM:             engineering (default) | resolved from --team flag
+BUILDER_AGENT:    (resolved from team profile)
+VALIDATOR_AGENT:  (resolved from team profile)
 SPEC_DIR:         specs/
 ```
 
@@ -24,7 +25,7 @@ SPEC_DIR:         specs/
 
 ## Dispatch Protocol
 
-Execute these 12 steps in order. Steps 3b is a branch -- if the fast path triggers, execute Step 3b and skip Steps 4-9. Do not write code yourself at any point.
+Execute these 12 steps in order. Step 1 now includes team resolution before the main parse begins. Step 3b is a branch -- if the fast path triggers, execute Step 3b and skip Steps 4-9. Do not write code yourself at any point.
 
 ### Step 1: Parse the User Prompt
 
@@ -34,12 +35,33 @@ Read the user's request carefully. Identify:
 - Any named exports, signatures, or types mentioned
 - The acceptance criteria (what "done" looks like)
 
+**Resolve flags:**
+
+1. Check if the prompt contains `--team <name>`. If so, strip `--team <name>` from the prompt and set TEAM to `<name>`.
+
+**Resolve team identity:**
+
+1. If no `--team` flag is present, set TEAM to `engineering` (default).
+2. Read the team profile from `.claude/skills/orchestrator/teams/<TEAM>.md`.
+3. Parse the YAML frontmatter to extract `builder` and `validator` fields.
+4. Set `BUILDER_AGENT` to the `builder` value from the profile.
+5. Set `VALIDATOR_AGENT` to the `validator` value from the profile.
+
+If the team profile file does not exist, abort immediately:
+`Cannot start: team profile '<name>' not found at .claude/skills/orchestrator/teams/<name>.md`
+
+Emit the team resolution event via Bash:
+
+```
+Bash("bun run scripts/emit-event.ts 'team.resolved' '{\"orchestrationId\":\"<id>\",\"team\":\"<TEAM>\",\"builderAgent\":\"<BUILDER_AGENT>\",\"validatorAgent\":\"<VALIDATOR_AGENT>\"}'")
+```
+
 Generate a unique `orchestrationId` now -- use a timestamp-based string like `orch-<Date.now()>` or a UUID. You will thread this ID through every emit call in this run so all events can be correlated in the dashboard.
 
 After parsing, emit the start event via Bash:
 
 ```
-Bash("bun run scripts/emit-event.ts 'orchestration.started' '{\"orchestrationId\":\"<id>\",\"prompt\":\"<USER_PROMPT>\",\"builderAgent\":\"builder\",\"validatorAgent\":\"validator\"}'")
+Bash("bun run scripts/emit-event.ts 'orchestration.started' '{\"orchestrationId\":\"<id>\",\"prompt\":\"<USER_PROMPT>\",\"team\":\"<TEAM>\",\"builderAgent\":\"<BUILDER_AGENT>\",\"validatorAgent\":\"<VALIDATOR_AGENT>\"}'")
 ```
 
 ### Step 2: Clarifying Questions
@@ -117,26 +139,26 @@ Bash("bun run scripts/emit-event.ts 'task.created' '{\"orchestrationId\":\"<id>\
    - Prompt: "You have been assigned a fast-path task. Implement the following: <full description and acceptance criteria>. Report what you changed."
 
 ```
-Bash("bun run scripts/emit-event.ts 'agent.dispatched' '{\"orchestrationId\":\"<id>\",\"taskId\":\"<numeric-id>\",\"role\":\"builder\",\"agentType\":\"builder\",\"model\":\"sonnet\"}'")
+Bash("bun run scripts/emit-event.ts 'agent.dispatched' '{\"orchestrationId\":\"<id>\",\"taskId\":\"<numeric-id>\",\"role\":\"builder\",\"agentType\":\"<BUILDER_AGENT>\",\"model\":\"sonnet\"}'")
 ```
 
 Wait for completion. Emit:
 
 ```
-Bash("bun run scripts/emit-event.ts 'agent.completed' '{\"orchestrationId\":\"<id>\",\"taskId\":\"<numeric-id>\",\"role\":\"builder\",\"agentType\":\"builder\"}'")
+Bash("bun run scripts/emit-event.ts 'agent.completed' '{\"orchestrationId\":\"<id>\",\"taskId\":\"<numeric-id>\",\"role\":\"builder\",\"agentType\":\"<BUILDER_AGENT>\"}'")
 ```
 
 4. Emit, then dispatch `$VALIDATOR_AGENT` using the Task tool (model: haiku, foreground: true):
    - Prompt: "Validate the following fast-path task: <full description and acceptance criteria>. Verify the builder's work meets all criteria. End your report with exactly one of: VERDICT: PASS or VERDICT: FAIL."
 
 ```
-Bash("bun run scripts/emit-event.ts 'agent.dispatched' '{\"orchestrationId\":\"<id>\",\"taskId\":\"<numeric-id>\",\"role\":\"validator\",\"agentType\":\"validator\",\"model\":\"haiku\"}'")
+Bash("bun run scripts/emit-event.ts 'agent.dispatched' '{\"orchestrationId\":\"<id>\",\"taskId\":\"<numeric-id>\",\"role\":\"validator\",\"agentType\":\"<VALIDATOR_AGENT>\",\"model\":\"haiku\"}'")
 ```
 
 Wait for completion. Emit:
 
 ```
-Bash("bun run scripts/emit-event.ts 'agent.completed' '{\"orchestrationId\":\"<id>\",\"taskId\":\"<numeric-id>\",\"role\":\"validator\",\"agentType\":\"validator\"}'")
+Bash("bun run scripts/emit-event.ts 'agent.completed' '{\"orchestrationId\":\"<id>\",\"taskId\":\"<numeric-id>\",\"role\":\"validator\",\"agentType\":\"<VALIDATOR_AGENT>\"}'")
 ```
 
 5. Parse the validator's verdict. Emit:
@@ -217,6 +239,10 @@ Write the full spec to `$SPEC_DIR/<descriptive-name>.md` before dispatching any 
 
 <original user prompt, verbatim>
 
+## Team
+
+<TEAM> (builder: <BUILDER_AGENT>, validator: <VALIDATOR_AGENT>)
+
 ## Task Graph
 
 | Task ID | Subject | Dependencies | Wave | Status |
@@ -262,7 +288,7 @@ Note the `Retries: 0` field on each task. The orchestrator increments this in th
 After writing the spec file, emit:
 
 ```
-Bash("bun run scripts/emit-event.ts 'spec.written' '{\"orchestrationId\":\"<id>\",\"specPath\":\"specs/<filename>.md\"}'")
+Bash("bun run scripts/emit-event.ts 'spec.written' '{\"orchestrationId\":\"<id>\",\"specPath\":\"specs/<filename>.md\",\"team\":\"<TEAM>\"}'")
 ```
 
 ### Step 7: Plan Refinement
@@ -272,10 +298,10 @@ Present the task graph to the user for review and approval before any agents are
 1. Emit:
 
 ```
-Bash("bun run scripts/emit-event.ts 'plan.presented' '{\"orchestrationId\":\"<id>\",\"taskCount\":<n>,\"waveCount\":<n>}'")
+Bash("bun run scripts/emit-event.ts 'plan.presented' '{\"orchestrationId\":\"<id>\",\"taskCount\":<n>,\"waveCount\":<n>,\"team\":\"<TEAM>\"}'")
 ```
 
-2. Display the task graph table to the user (Task ID, Subject, Dependencies, Wave columns).
+2. Display the task graph table to the user (Task ID, Subject, Dependencies, Wave columns). Also display the resolved team: `Team: <TEAM> | Builder: <BUILDER_AGENT> | Validator: <VALIDATOR_AGENT>`.
 
 3. Ask the user via AskUserQuestion with these options:
    - "Approve and proceed" (default)
@@ -317,6 +343,7 @@ Estimate the token cost for the full orchestration before dispatching any agents
 Present the estimate to the user as informational context (no approval gate -- this is for awareness only):
 
 ```
+Team: <TEAM> (builder: <BUILDER_AGENT>, validator: <VALIDATOR_AGENT>)
 Wave 1: <N> tasks -- ~<N * 4500> tokens
 Wave 2: <N> tasks -- ~<N * 4500> tokens
 ...
@@ -326,7 +353,7 @@ Total: ~<total> tokens estimated
 Emit:
 
 ```
-Bash("bun run scripts/emit-event.ts 'tokens.estimated' '{\"orchestrationId\":\"<id>\",\"estimatedTokens\":<total>,\"breakdown\":{\"wave1\":<tokens>,\"wave2\":<tokens>,...}}'")
+Bash("bun run scripts/emit-event.ts 'tokens.estimated' '{\"orchestrationId\":\"<id>\",\"estimatedTokens\":<total>,\"team\":\"<TEAM>\",\"breakdown\":{\"wave1\":<tokens>,\"wave2\":<tokens>,...}}'")
 ```
 
 Then continue to Step 9.
@@ -382,7 +409,7 @@ Update the task's Status in the spec file to `in_progress`.
 Before dispatching, emit:
 
 ```
-Bash("bun run scripts/emit-event.ts 'agent.dispatched' '{\"orchestrationId\":\"<id>\",\"taskId\":\"<numeric-id>\",\"role\":\"builder\",\"agentType\":\"builder\",\"model\":\"sonnet\"}'")
+Bash("bun run scripts/emit-event.ts 'agent.dispatched' '{\"orchestrationId\":\"<id>\",\"taskId\":\"<numeric-id>\",\"role\":\"builder\",\"agentType\":\"<BUILDER_AGENT>\",\"model\":\"sonnet\"}'")
 ```
 
 Dispatch `$BUILDER_AGENT` using the Task tool:
@@ -395,7 +422,7 @@ Dispatch `$BUILDER_AGENT` using the Task tool:
 Wait for the builder to complete. Then emit:
 
 ```
-Bash("bun run scripts/emit-event.ts 'agent.completed' '{\"orchestrationId\":\"<id>\",\"taskId\":\"<numeric-id>\",\"role\":\"builder\",\"agentType\":\"builder\"}'")
+Bash("bun run scripts/emit-event.ts 'agent.completed' '{\"orchestrationId\":\"<id>\",\"taskId\":\"<numeric-id>\",\"role\":\"builder\",\"agentType\":\"<BUILDER_AGENT>\"}'")
 ```
 
 **Dispatch the Validator:**
@@ -403,7 +430,7 @@ Bash("bun run scripts/emit-event.ts 'agent.completed' '{\"orchestrationId\":\"<i
 Before dispatching, emit:
 
 ```
-Bash("bun run scripts/emit-event.ts 'agent.dispatched' '{\"orchestrationId\":\"<id>\",\"taskId\":\"<numeric-id>\",\"role\":\"validator\",\"agentType\":\"validator\",\"model\":\"haiku\"}'")
+Bash("bun run scripts/emit-event.ts 'agent.dispatched' '{\"orchestrationId\":\"<id>\",\"taskId\":\"<numeric-id>\",\"role\":\"validator\",\"agentType\":\"<VALIDATOR_AGENT>\",\"model\":\"haiku\"}'")
 ```
 
 Dispatch `$VALIDATOR_AGENT` using the Task tool:
@@ -414,7 +441,7 @@ Dispatch `$VALIDATOR_AGENT` using the Task tool:
 Wait for the validator to complete. Then emit:
 
 ```
-Bash("bun run scripts/emit-event.ts 'agent.completed' '{\"orchestrationId\":\"<id>\",\"taskId\":\"<numeric-id>\",\"role\":\"validator\",\"agentType\":\"validator\"}'")
+Bash("bun run scripts/emit-event.ts 'agent.completed' '{\"orchestrationId\":\"<id>\",\"taskId\":\"<numeric-id>\",\"role\":\"validator\",\"agentType\":\"<VALIDATOR_AGENT>\"}'")
 ```
 
 **Parse the verdict:**
@@ -504,6 +531,8 @@ After all waves complete (successfully or via abort/skip decisions), write the R
 
 All <N> tasks completed across <N> waves.
 
+Team: <TEAM> (builder: <BUILDER_AGENT>, validator: <VALIDATOR_AGENT>)
+
 Execution summary:
 - Tasks passed on first attempt: <N>
 - Tasks passed after retry: <N>
@@ -537,6 +566,7 @@ Tasks not executed: <list>
 **If all tasks passed (or skipped by user decision):**
 
 Report the full build summary to the user:
+- Team used: `<TEAM>` (builder: `<BUILDER_AGENT>`, validator: `<VALIDATOR_AGENT>`)
 - Files created or modified (per task)
 - Wave execution order with task counts per wave
 - All verdicts (task-id, PASS/FAIL, and retry count if > 0)
@@ -549,7 +579,7 @@ Report the full build summary to the user:
 Then emit:
 
 ```
-Bash("bun run scripts/emit-event.ts 'orchestration.completed' '{\"orchestrationId\":\"<id>\",\"verdict\":\"PASS\",\"taskCount\":<n>,\"retriesTotal\":<n>,\"fastPath\":<true|false>,\"clarifyingQuestionsAsked\":<n>}'")
+Bash("bun run scripts/emit-event.ts 'orchestration.completed' '{\"orchestrationId\":\"<id>\",\"verdict\":\"PASS\",\"team\":\"<TEAM>\",\"taskCount\":<n>,\"retriesTotal\":<n>,\"fastPath\":<true|false>,\"clarifyingQuestionsAsked\":<n>}'")
 ```
 
 **If orchestration aborted:**
@@ -565,24 +595,25 @@ Report to the user:
 Then emit:
 
 ```
-Bash("bun run scripts/emit-event.ts 'orchestration.completed' '{\"orchestrationId\":\"<id>\",\"verdict\":\"FAIL\",\"failedTaskId\":\"<task-id>\",\"failedWave\":<n>,\"retriesTotal\":<n>,\"fastPath\":<true|false>}'")
+Bash("bun run scripts/emit-event.ts 'orchestration.completed' '{\"orchestrationId\":\"<id>\",\"verdict\":\"FAIL\",\"team\":\"<TEAM>\",\"failedTaskId\":\"<task-id>\",\"failedWave\":<n>,\"retriesTotal\":<n>,\"fastPath\":<true|false>}'")
 ```
 
 ---
 
 ## Full Event Sequence Reference
 
-For a 3-wave orchestration with no fast path and no clarification needed:
+For a 3-wave orchestration with no fast path and no clarification needed (engineering team):
 
 ```
-orchestration.started
+team.resolved               { team: "engineering", builderAgent: "builder", validatorAgent: "validator" }
+orchestration.started       { team: "engineering", builderAgent: "builder", validatorAgent: "validator" }
 clarification.skipped       { reason: "prompt is specific" }
 fast_path.evaluated         { triggered: false, reason: "3 tasks, multiple files" }
 decomposition.completed     { taskCount: 5, waveCount: 3 }
-spec.written                { specPath: "specs/rest-api.md" }
-plan.presented              { taskCount: 5, waveCount: 3 }
+spec.written                { specPath: "specs/rest-api.md", team: "engineering" }
+plan.presented              { taskCount: 5, waveCount: 3, team: "engineering" }
 plan.approved               { orchestrationId }
-tokens.estimated            { estimatedTokens: 22500, breakdown: { wave1: 4500, wave2: 13500, wave3: 4500 } }
+tokens.estimated            { estimatedTokens: 22500, team: "engineering", breakdown: { wave1: 4500, wave2: 13500, wave3: 4500 } }
 
 task.created                { taskId: "1", subject: "Define User types" }
 task.created                { taskId: "2", subject: "Implement GET /users" }
@@ -590,25 +621,25 @@ task.created                { taskId: "2", subject: "Implement GET /users" }
 
 spec.reread                 { waveNumber: 1 }
 wave.started                { waveNumber: 1, taskIds: ["define-user-types"] }
-  agent.dispatched          { role: "builder", taskId: "1" }
-  agent.completed           { role: "builder", taskId: "1" }
-  agent.dispatched          { role: "validator", taskId: "1" }
-  agent.completed           { role: "validator", taskId: "1" }
+  agent.dispatched          { role: "builder", agentType: "builder", taskId: "1" }
+  agent.completed           { role: "builder", agentType: "builder", taskId: "1" }
+  agent.dispatched          { role: "validator", agentType: "validator", taskId: "1" }
+  agent.completed           { role: "validator", agentType: "validator", taskId: "1" }
   verdict.received          { taskId: "1", verdict: "PASS" }
 wave.completed              { waveNumber: 1, verdicts: { "define-user-types": "PASS" } }
 
 spec.reread                 { waveNumber: 2 }
 wave.started                { waveNumber: 2, taskIds: ["implement-get-users", ...] }
-  agent.dispatched          { role: "builder", taskId: "2" }
-  agent.completed           { role: "builder", taskId: "2" }
-  agent.dispatched          { role: "validator", taskId: "2" }
-  agent.completed           { role: "validator", taskId: "2" }
+  agent.dispatched          { role: "builder", agentType: "builder", taskId: "2" }
+  agent.completed           { role: "builder", agentType: "builder", taskId: "2" }
+  agent.dispatched          { role: "validator", agentType: "validator", taskId: "2" }
+  agent.completed           { role: "validator", agentType: "validator", taskId: "2" }
   verdict.received          { taskId: "2", verdict: "FAIL" }
   retry.started             { taskId: "2", attempt: 1, maxAttempts: 3 }
-  agent.dispatched          { role: "builder", taskId: "2" }   -- resume: <agentId>
-  agent.completed           { role: "builder", taskId: "2" }
-  agent.dispatched          { role: "validator", taskId: "2" }
-  agent.completed           { role: "validator", taskId: "2" }
+  agent.dispatched          { role: "builder", agentType: "builder", taskId: "2" }   -- resume: <agentId>
+  agent.completed           { role: "builder", agentType: "builder", taskId: "2" }
+  agent.dispatched          { role: "validator", agentType: "validator", taskId: "2" }
+  agent.completed           { role: "validator", agentType: "validator", taskId: "2" }
   verdict.received          { taskId: "2", verdict: "PASS" }
   retry.succeeded           { taskId: "2", attempt: 1 }
   ...
@@ -619,37 +650,47 @@ wave.started                { waveNumber: 3, taskIds: ["write-user-route-tests"]
   ...
 wave.completed              { waveNumber: 3, verdicts: { ... } }
 
-orchestration.completed     { verdict: "PASS", retriesTotal: 1, fastPath: false }
+orchestration.completed     { verdict: "PASS", team: "engineering", retriesTotal: 1, fastPath: false }
 ```
 
-For a fast-path run (vague prompt requiring clarification, then trivial task):
+For a research team invocation (`--team research`):
 
 ```
-orchestration.started
-clarification.started
-clarification.completed     { questionsAsked: 2 }
-fast_path.evaluated         { triggered: true, reason: "single file, < 20 lines" }
-task.created                { taskId: "1" }
-agent.dispatched            { role: "builder", taskId: "1" }
-agent.completed             { role: "builder", taskId: "1" }
-agent.dispatched            { role: "validator", taskId: "1" }
-agent.completed             { role: "validator", taskId: "1" }
-verdict.received            { taskId: "1", verdict: "PASS" }
-orchestration.completed     { verdict: "PASS", fastPath: true, clarifyingQuestionsAsked: 2 }
+team.resolved               { team: "research", builderAgent: "research-builder", validatorAgent: "research-validator" }
+orchestration.started       { team: "research", builderAgent: "research-builder", validatorAgent: "research-validator" }
+clarification.skipped       { reason: "topic and scope are clear" }
+fast_path.evaluated         { triggered: false, reason: "multi-source synthesis task" }
+decomposition.completed     { taskCount: 3, waveCount: 2 }
+spec.written                { specPath: "specs/ts-frameworks.md", team: "research" }
+plan.presented              { taskCount: 3, waveCount: 2, team: "research" }
+plan.approved               { orchestrationId }
+tokens.estimated            { estimatedTokens: 13500, team: "research" }
+...
+  agent.dispatched          { role: "builder", agentType: "research-builder", taskId: "1" }
+  agent.completed           { role: "builder", agentType: "research-builder", taskId: "1" }
+  agent.dispatched          { role: "validator", agentType: "research-validator", taskId: "1" }
+  agent.completed           { role: "validator", agentType: "research-validator", taskId: "1" }
+  verdict.received          { taskId: "1", verdict: "PASS" }
+...
+orchestration.completed     { verdict: "PASS", team: "research", fastPath: false }
 ```
-
-Note: In the full DAG event sequence, `task.created` events are emitted in Step 9 before the first spec.reread. They appear in-order per task as each TaskCreate returns.
 
 ---
 
 ## What This Stage Proves
 
-Stage 3 completes Phase 1 by adding the four human-in-the-loop checkpoints and one resilience mechanism that transform the Stage 2 plan-and-execute loop into a robust orchestrator:
+Stage 4 completes the HOP proof by demonstrating that the orchestration wrapper is fully domain-agnostic. The same 12-step protocol runs identical for engineering and research teams -- only the agent names in HOP Configuration change.
 
 ```
-User Prompt
+User Prompt (with optional --team flag)
     |
     v
+[Orchestrator] -- Step 1: Parse + Resolve Team
+    |                    |
+    |              Read teams/<TEAM>.md
+    |              Set BUILDER_AGENT, VALIDATOR_AGENT
+    |                    |
+    v                    v
 [Orchestrator] -- Step 2: Clarifying Questions (if vague)
     |
     v
@@ -659,52 +700,70 @@ User Prompt
     |                    |
     |                    v
     |              Step 3b: Fast Path Dispatch
-    |              (single builder+validator, retry if needed)
+    |              (using resolved $BUILDER_AGENT + $VALIDATOR_AGENT)
     |
     | [not triggered]
     v
 [Orchestrator] -- Decomposes into task graph
     |
-    |-- Computes waves (Kahn's topological sort)
-    |-- Writes spec file (plan before any agent dispatched)
+    |-- Computes waves
+    |-- Writes spec file (includes Team section)
     |
     v
-Step 7: Plan Refinement -- show task graph to user, accept modifications
+Step 7: Plan Refinement -- shows team identity alongside task graph
     |
     v
-Step 8: Token Estimation -- show cost preview (informational)
+Step 8: Token Estimation -- shows team in cost preview
     |
     v
-Step 9: Create all tasks with dependency relationships
+Step 9: Create all tasks
     |
     v
-Wave 1: root tasks (no dependencies)
-    |-- Dispatch [Builder] -> updates spec file
-    |-- Dispatch [Validator] -> VERDICT: PASS/FAIL
-    |-- On FAIL: retry up to 3x with resume: agentId + validator feedback
-    |-- On retry exhaustion: ask user (skip / guide / abort)
+Wave 1..N: same builder/validator/retry cycle -- but via resolved agent names
+    |-- $BUILDER_AGENT dispatched (could be builder or research-builder)
+    |-- $VALIDATOR_AGENT dispatched (could be validator or research-validator)
+    |-- Retry protocol identical regardless of team
     |
     v
-Wave 2..N: tasks whose dependencies all completed
-    |-- Re-read spec file (context compaction defense)
-    |-- Same builder/validator/retry cycle per task
+Step 11: Spec result includes team identity
     |
     v
-Step 11: Update spec with retry stats
-    |
-    v
-Step 12: Report -- verdicts, retry stats, token cost, duration, fast path indicator
+Step 12: Report includes team identity
 ```
 
-The orchestrator never touches files. Builder writes. Validator reads. Roles are absolute. The spec file is the shared source of truth between all agents.
+The protocol steps are identical. Only `$BUILDER_AGENT` and `$VALIDATOR_AGENT` differ. This is the HOP proof: the orchestration wrapper is a pure function of agent identities and user prompt.
+
+---
+
+## Team Profiles
+
+Team profiles live in `.claude/skills/orchestrator/teams/`. Each profile is a markdown file with YAML frontmatter:
+
+```yaml
+---
+team: <name>
+description: <brief description>
+builder: <agent-name>
+validator: <agent-name>
+---
+```
+
+Available teams:
+- `engineering` (default) -- code tasks, uses `builder` and `validator`
+- `research` -- research and synthesis tasks, uses `research-builder` and `research-validator`
+
+The `--team` flag selects the profile. If the profile file does not exist, abort with:
+`Cannot start: team profile '<name>' not found at .claude/skills/orchestrator/teams/<name>.md`
 
 ---
 
 ## What This Stage Does NOT Do
 
-This is Stage 3 (Full Phase 1). The following capabilities are intentionally absent -- they are added in later stages:
+This is Stage 4 (Team Switching). The following capabilities are intentionally absent -- they are added in later stages:
 
 - **No parallel wave execution** -- tasks within a wave run sequentially, one at a time (Stage 8)
-- **No --team switching** -- builder and validator are hardcoded in HOP Configuration (Stage 4)
-- **No cost actuals from API** -- token estimation uses fixed per-dispatch estimates, not live API cost data (future stage)
-- **No persistent orchestration state** -- resuming from a mid-wave interruption requires re-reading the spec file; there is no external state store (future stage)
+- **No difficulty routing** -- no Codex CLI escalation for hard tasks (Stage 6)
+- **No spec hardening** -- vague task descriptions are not rewritten before dispatch (Stage 6)
+- **No HITL bounce-back** -- the orchestrator cannot pause mid-execution to consult the user (Stage 7)
+- **No persistent state store** -- resuming requires re-reading the spec file; there is no hydration checkpoint (Stage 7)
+- **No live API cost data** -- token estimation uses fixed per-dispatch assumptions, not actual usage reported by the API (future)
