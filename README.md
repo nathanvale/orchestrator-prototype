@@ -397,3 +397,13 @@ MIT
 ---
 
 Built with [bun-typescript-starter](https://github.com/nathanvale/bun-typescript-starter)
+
+---
+
+## Navigation
+
+| | |
+|---|---|
+| **Previous** | [Stage 1: Dispatch](../../tree/orchestration/1-dispatch) |
+| **Next** | [Stage 3: Full Phase 1](../../tree/orchestration/3-full) |
+| **All Modules** | [Main (Lobby)](../../tree/main) |
