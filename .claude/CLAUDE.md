@@ -170,3 +170,14 @@ After running `bun run setup`:
 1. Push directly to main (pre-push hook blocks)
 2. Skip validation before commits
 3. Use destructive git commands (`reset --hard`, `push --force`)
+
+## Adding a New Pattern
+
+1. Write source doc in `docs/patterns/<slug>.md`
+2. Create `.claude/references/patterns/pattern-<slug>.md` with YAML frontmatter
+   (copy an existing pattern file as template -- verify `slots` map matches
+   slot contract)
+3. Add keyword row to `.claude/skills/agentic-dojo/SKILL.md` Step 2 pattern table
+4. Add aliases to SKILL.md Step 2 alias table
+5. Add slug to SKILL.md zero-state pattern list
+6. If Pattern Advisor exists: verify advisor SKILL.md can score the new pattern
