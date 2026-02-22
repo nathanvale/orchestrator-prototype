@@ -49,12 +49,13 @@ The HOP variables are declared at the top of [`SKILL.md`](../../.claude/skills/o
 
 ```
 USER_PROMPT:      (provided by the user)
-BUILDER_AGENT:    builder
-VALIDATOR_AGENT:  validator
+TEAM:             engineering (default) | resolved from --team flag
+BUILDER_AGENT:    (resolved from team profile)
+VALIDATOR_AGENT:  (resolved from team profile)
 SPEC_DIR:         specs/
 ```
 
-In Stage 1, these are hardcoded defaults. The dispatch protocol references `$BUILDER_AGENT` and `$VALIDATOR_AGENT` as variables throughout -- in the agent dispatch calls, in the observability events, in the report. But in Stage 1, those variables always resolve to `builder` and `validator`.
+In Stages 1-3, these were hardcoded defaults. The dispatch protocol referenced `$BUILDER_AGENT` and `$VALIDATOR_AGENT` as variables throughout, but they always resolved to `builder` and `validator`. In Stage 4, these variables are resolved dynamically from team profile files in `.claude/skills/orchestrator/teams/`.
 
 ### Why Parameterize From Day One?
 
@@ -66,23 +67,60 @@ More importantly, parameterizing from day one forces the architecture to be doma
 
 ### Stage 4: Full HOP Proof
 
-Stage 4 adds `--team` flag support. A user can invoke:
+Stage 4 completes the proof by introducing team profiles and `--team` flag switching. A user can invoke:
 
 ```
 /orchestrate "add a utility function"                            # uses --team engineering (default)
 /orchestrate "research top 5 TS testing frameworks" --team research
 ```
 
-The HOP Configuration block becomes:
+The team profile resolution happens in Step 1 of the 12-step dispatch protocol:
 
+1. Parse `--team <name>` from the prompt (default: `engineering`)
+2. Read the team profile from `.claude/skills/orchestrator/teams/<name>.md`
+3. Extract `builder` and `validator` from the YAML frontmatter
+4. Set `$BUILDER_AGENT` and `$VALIDATOR_AGENT` to the resolved values
+
+#### Before and After
+
+**Stage 3 HOP Configuration (hardcoded):**
 ```
-BUILDER_AGENT:    builder          (or research-builder if --team research)
-VALIDATOR_AGENT:  validator        (or research-validator if --team research)
+BUILDER_AGENT:    builder
+VALIDATOR_AGENT:  validator
 ```
 
-Everything else -- the 5-step dispatch protocol, task creation, observability events, result reporting -- is identical between both invocations. Only the agent names change.
+**Stage 4 HOP Configuration (resolved from team profile):**
+```
+TEAM:             engineering (default) | resolved from --team flag
+BUILDER_AGENT:    (resolved from team profile)
+VALIDATOR_AGENT:  (resolved from team profile)
+```
 
-This is the proof. Same orchestrator, different agents, same results. The DAG engine (Stage 2), wave computation (Stage 2), and retry logic (Stage 3) are all part of the fixed wrapper -- they stay constant regardless of what agents are plugged in.
+#### Proof by Diff
+
+The diff between an engineering orchestration and a research orchestration is exactly two agent names in the event stream:
+
+```diff
+- team.resolved    { team: "engineering", builderAgent: "builder", validatorAgent: "validator" }
++ team.resolved    { team: "research", builderAgent: "research-builder", validatorAgent: "research-validator" }
+```
+
+Everything else -- the 12-step dispatch protocol, task creation, wave computation, spec file format, retry logic, plan refinement, token estimation, observability events, result reporting -- is identical between both invocations. The orchestrator does not change at all when you switch teams.
+
+#### What Changes vs What Stays the Same
+
+| Aspect | Engineering Team | Research Team | Same? |
+|--------|-----------------|---------------|-------|
+| Dispatch protocol | 12 steps | 12 steps | Yes |
+| Task creation | TaskCreate + dependencies | TaskCreate + dependencies | Yes |
+| Wave computation | Kahn's algorithm | Kahn's algorithm | Yes |
+| Spec file format | Same template | Same template | Yes |
+| Retry mechanics | 3x with resume | 3x with resume | Yes |
+| Plan refinement | User review loop | User review loop | Yes |
+| Builder agent | `builder` | `research-builder` | **No** |
+| Validator agent | `validator` | `research-validator` | **No** |
+
+Two cells differ. Everything else is identical. This is the proof that the orchestrator is a true Higher-Order Prompt -- the fixed wrapper is completely decoupled from the variable parameters.
 
 ---
 
@@ -109,3 +147,4 @@ This is the proof. Same orchestrator, different agents, same results. The DAG en
 | [`docs/agents.md`](../agents.md) | Full agent catalog, including Stage 4 research agents that demonstrate HOP switching |
 | [`specs/master-plan.md`](../../specs/master-plan.md) | Stage 4 section -- HOP parameterization proof design |
 | [`.claude/skills/orchestrator/SKILL.md`](../../.claude/skills/orchestrator/SKILL.md) | The HOP Configuration block with BUILDER_AGENT and VALIDATOR_AGENT variables |
+| [`docs/patterns/team-profiles.md`](team-profiles.md) | Team profile pattern -- how agent identities are bundled and resolved |
