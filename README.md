@@ -404,6 +404,6 @@ Built with [bun-typescript-starter](https://github.com/nathanvale/bun-typescript
 
 | | |
 |---|---|
-| **Previous** | [Stage 4: HOP Parameterization](../../tree/orchestration/4-hop) |
-| **Next** | [Stage 6: Codex Escalation](../../tree/orchestration/6-codex) |
+| **Previous** | [Stage 5: Plugin Extraction](../../tree/orchestration/5-plugin) |
+| **Next** | [Stage 7: HITL + Persistence](../../tree/orchestration/7-hitl) |
 | **All Modules** | [Main (Lobby)](../../tree/main) |

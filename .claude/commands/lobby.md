@@ -2,7 +2,7 @@
 description: Return to the learning lobby on main
 ---
 
-You are on branch `orchestration/5-plugin`.
+You are on branch `orchestration/6-codex`.
 
 To return to the lobby: `git checkout main`
 
