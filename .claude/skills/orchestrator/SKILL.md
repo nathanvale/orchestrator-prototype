@@ -1,11 +1,11 @@
 ---
-description: HOP Orchestrator - dispatches Builder and Validator agents for multi-task DAG execution with team switching, clarifying questions, fast path, plan refinement, token estimation, retry, difficulty routing, spec hardening, Codex CLI escalation, HITL bounce-back, spec-file-based state persistence with idempotent resume, parallel wave dispatch, worktree isolation
+description: HOP Orchestrator - dispatches Builder and Validator agents for multi-task DAG execution with team switching, clarifying questions, fast path, plan refinement, token estimation, retry, difficulty routing, spec hardening, Codex CLI escalation, HITL bounce-back, spec-file-based state persistence with idempotent resume, parallel wave dispatch, worktree isolation, browser-based validation, Ralph Wiggum visual retry loop
 use-when: The user invokes /orchestrate or asks you to orchestrate a multi-step implementation task
 ---
 
-# HOP Orchestrator (Stage 8 - Parallel Wave Execution + Worktree Isolation)
+# HOP Orchestrator (Stage 9 - Browser Validation + Ralph Wiggum Loop)
 
-You are an orchestration leader. You NEVER write code yourself. You coordinate Builder and Validator agents to implement tasks across dependency-ordered waves. You resolve agent identities from team profiles, ask clarifying questions when prompts are vague, gate trivially simple prompts onto a fast path, assess task difficulty for routing, harden spec descriptions before dispatch, present plans for user approval, estimate token cost before dispatch, retry failed tasks up to 3 times before escalating, detect mid-task conditions that require human judgment (bounce-back), persist orchestration state to the spec file so any run can be resumed from exactly where it stopped, and dispatch independent tasks within the same wave concurrently using git worktree isolation, falling back to sequential execution on conflict.
+You are an orchestration leader. You NEVER write code yourself. You coordinate Builder and Validator agents to implement tasks across dependency-ordered waves. You resolve agent identities from team profiles, ask clarifying questions when prompts are vague, gate trivially simple prompts onto a fast path, assess task difficulty for routing, harden spec descriptions before dispatch, present plans for user approval, estimate token cost before dispatch, retry failed tasks up to 3 times before escalating, detect mid-task conditions that require human judgment (bounce-back), persist orchestration state to the spec file so any run can be resumed from exactly where it stopped, dispatch independent tasks within the same wave concurrently using git worktree isolation falling back to sequential execution on conflict, and validate UI-facing tasks visually using the agent-browser CLI, with a screenshot-fix-screenshot retry cycle (Ralph Wiggum loop) for iterative visual corrections.
 
 ---
 
@@ -23,6 +23,8 @@ CODEX_ENABLED:    true (if codex CLI detected) | false (if --no-codex flag or co
 CODEX_THRESHOLD:  hard (only route hard-tagged tasks to Codex)
 RESUME_SPEC_PATH: (path to spec file) | absent (normal start)
 SEQUENTIAL_MODE:  false (default) | true (if --sequential flag present)
+BROWSER_ENABLED:  true (default) | false (if --no-browser flag present or no DEV_SERVER_CMD configured)
+DEV_SERVER_CMD:   (from package.json scripts.dev or environment) | absent
 ```
 
 ---
@@ -45,6 +47,7 @@ Read the user's request carefully. Identify:
 2. Check if the prompt contains `--team <name>`. If so, strip `--team <name>` from the prompt and set TEAM to `<name>`.
 3. Check if the prompt contains `--no-codex`. If so, strip it and set CODEX_ENABLED to `false`.
 4. Check if the prompt contains `--sequential`. If so, strip it and set SEQUENTIAL_MODE to `true`.
+5. Check if the prompt contains `--no-browser`. If so, strip it and set BROWSER_ENABLED to `false`.
 
 **Resolve team identity:**
 
@@ -85,7 +88,7 @@ Hydration steps (reference `hitl-protocol.md` -- Resume Protocol for full detail
    - Restore agent sessions: read `Agent Sessions`. For any task still `in_progress`, the stored agentId is used to resume the builder with `--resume <agentId>`.
    - Restore retry state: read `Retry State`. Retry counters are restored so the 3-retry limit is correctly enforced.
    - Restore bounce history: read `Bounce History`. Any task still in `bounced` status is re-presented to the user immediately via the bounce-back protocol before any other task is dispatched.
-   - Restore routing flags: read `Codex Available` and `Sequential Mode`. Apply the same routing decisions as the original run. If `Sequential Mode` was `true` in the checkpoint, set SEQUENTIAL_MODE to `true` for this resume run.
+   - Restore routing flags: read `Codex Available`, `Sequential Mode`, and `Browser Enabled`. Apply the same routing decisions as the original run. If `Sequential Mode` was `true` in the checkpoint, set SEQUENTIAL_MODE to `true` for this resume run. If `Browser Enabled` was `false` in the checkpoint, set BROWSER_ENABLED to `false` for this resume run.
 4. **If the checkpoint is absent (pre-Stage-7 spec file) -- basic idempotency:**
    - Emit a warning: `No hydration checkpoint found. Resuming with status-based idempotency only -- retry counts and agent sessions cannot be restored.`
    - Read each task's `Status` field from the Task Graph table.
@@ -256,6 +259,34 @@ Emit:
 ```
 Bash("bun run scripts/emit-event.ts 'difficulty.assessed' '{\"orchestrationId\":\"<id>\",\"tasks\":[{\"taskId\":\"<task-id>\",\"difficulty\":\"standard|hard\"}]}'")
 ```
+
+### Step 4c: UI Task Detection
+
+After decomposing into tasks, scan each task's description for UI signals. If any signals match, tag the task with `ui: true` or `ui: possible` in the task graph.
+
+**UI signal keywords (case-insensitive):**
+- HTML, CSS, SCSS, styled, className, Tailwind
+- React, component, JSX, TSX, Vue, Svelte, Angular
+- page, layout, sidebar, header, footer, nav, menu
+- style, visual, UI, UX, responsive, mobile
+- button, form, input, modal, dialog, dropdown
+- animation, transition, hover, click handler
+- screenshot, visual test, browser test
+
+**Tagging rules:**
+- If a task matches **2+ UI signals**: tag it `ui: true`. The task will receive browser validation after the standard validator issues VERDICT: PASS.
+- If a task matches **1 UI signal**: tag it `ui: possible`. The validator will determine if browser validation is needed based on the actual output.
+- If a task matches **0 UI signals**: no ui tag. Standard validation only.
+
+Add the `ui` tag to each matching task's entry in the spec file Task Graph table.
+
+Emit `ui.detected` after tagging:
+
+```
+Bash("bun run scripts/emit-event.ts 'ui.detected' '{\"orchestrationId\":\"<id>\",\"uiTasks\":[\"<task-id>\",...],\"possibleUiTasks\":[\"<task-id>\",...],\"browserEnabled\":<true|false>}'")
+```
+
+If BROWSER_ENABLED is `false`, still emit the event (for observability) but note that browser validation will be skipped.
 
 Check Codex availability (unless CODEX_ENABLED was already set to `false` by `--no-codex`):
 
@@ -770,13 +801,137 @@ Emit:
 Bash("bun run scripts/emit-event.ts 'verdict.received' '{\"orchestrationId\":\"<id>\",\"taskId\":\"<numeric-id>\",\"verdict\":\"PASS|FAIL\"}'")
 ```
 
-**On VERDICT: PASS:** Update the task Status in the spec file to `completed`. Write hydration checkpoint -- update Wave Progress. Continue to the next task in this wave.
+**On VERDICT: PASS:** Check if the task is tagged `ui: true` or `ui: possible`. If so, proceed to Browser Validation below before marking complete. Otherwise, update the task Status in the spec file to `completed`, write hydration checkpoint, and continue to the next task.
 
 ```
 Bash("bun run scripts/emit-event.ts 'checkpoint.written' '{\"orchestrationId\":\"<id>\",\"specPath\":\"specs/<filename>.md\",\"currentWave\":<n>}'")
 ```
 
-**On VERDICT: FAIL:** Go to Step 11 for this task.
+**Browser Validation (for UI tasks):**
+
+After the standard validator reports VERDICT: PASS for a task tagged `ui: true` or `ui: possible`:
+
+1. **Check browser eligibility:**
+   - If BROWSER_ENABLED is `false`: skip browser validation. Emit `browser.skipped` with reason "no-browser flag". Mark task `completed`. Continue.
+   - If DEV_SERVER_CMD is not configured: skip browser validation. Emit `browser.skipped` with reason "no dev server". Mark task `completed`. Continue.
+   - Otherwise: proceed with browser validation.
+
+   ```
+   Bash("bun run scripts/emit-event.ts 'browser.skipped' '{\"orchestrationId\":\"<id>\",\"taskId\":\"<numeric-id>\",\"reason\":\"<no-browser flag | no dev server>\"}'")
+   ```
+
+2. **Ensure dev server is running:**
+   If no dev server is running for this orchestration, start one:
+   ```
+   Bash("${DEV_SERVER_CMD} &", run_in_background: true)
+   ```
+   Record the PID. Wait for the server to be ready:
+   ```
+   Bash("for i in $(seq 1 10); do curl -s http://localhost:3000 > /dev/null && echo 'ready' && break || sleep 1; done")
+   ```
+   If the server fails to become ready after 10 seconds, emit `browser.skipped` with reason "dev server failed to start", mark task `completed`, and disable browser validation for ALL remaining tasks in this orchestration run (set BROWSER_ENABLED to `false`).
+   If server started successfully, emit `devserver.started`.
+
+3. **Take screenshot and validate:**
+   Use the agent-browser CLI for token-efficient browser automation (93% context reduction vs Playwright):
+   ```
+   Bash("npx agent-browser navigate http://localhost:3000/<relevant-path>")
+   Bash("npx agent-browser screenshot --output /tmp/browser-val-<taskId>.png")
+   ```
+
+   Dispatch the validator agent in browser-validation mode:
+   - model: haiku
+   - foreground: true
+   - Prompt: "You are validating the visual output of task <taskId>. A screenshot has been taken at /tmp/browser-val-<taskId>.png. Read the spec file at specs/<filename>.md for task <taskId> acceptance criteria. Examine the screenshot and verify: (1) the component/page renders correctly, (2) layout matches expectations, (3) no visual regressions. Report VERDICT: PASS or VERDICT: FAIL with specific visual issues. If failing, prefix your verdict line with `failure_mode:visual`."
+
+   Emit:
+   ```
+   Bash("bun run scripts/emit-event.ts 'browser.validation_started' '{\"orchestrationId\":\"<id>\",\"taskId\":\"<numeric-id>\",\"screenshotPath\":\"/tmp/browser-val-<taskId>.png\"}'")
+   ```
+
+4. **Parse browser verdict:**
+   - VERDICT: PASS -> mark task `completed`. Emit `browser.passed`. Write checkpoint. Continue.
+   - VERDICT: FAIL -> enter Ralph Wiggum loop below.
+
+   ```
+   Bash("bun run scripts/emit-event.ts 'browser.passed' '{\"orchestrationId\":\"<id>\",\"taskId\":\"<numeric-id>\"}'")
+   ```
+
+**Ralph Wiggum Loop (visual retry cycle):**
+
+When browser validation returns VERDICT: FAIL failure_mode:visual, enter the Ralph Wiggum loop -- a screenshot-fix-screenshot cycle. This is separate from the standard code-failure retry protocol (Step 11).
+
+Initialize `visualRetryCount = 0` (separate from the standard retryCount). Maintain a running `fixAttemptSummary` string.
+
+While `visualRetryCount < 3`:
+
+1. Increment `visualRetryCount`.
+
+2. Emit `ralph_wiggum.iteration`:
+   ```
+   Bash("bun run scripts/emit-event.ts 'ralph_wiggum.iteration' '{\"orchestrationId\":\"<id>\",\"taskId\":\"<numeric-id>\",\"iteration\":<visualRetryCount>,\"maxIterations\":3}'")
+   ```
+
+3. Re-dispatch the builder with the screenshot and failure details:
+   - model: sonnet
+   - foreground: true
+   - Prompt: "The browser validator found visual issues with your implementation of task <taskId>. Here are the issues: <failure details from validator>. A screenshot showing the current state is at /tmp/browser-val-<taskId>.png. Fix the visual issues and update the files. Previous attempts: <fixAttemptSummary>"
+
+   Wait for builder to complete. Append a one-line summary of this fix attempt to `fixAttemptSummary`.
+
+4. Take a new screenshot:
+   ```
+   Bash("npx agent-browser screenshot --output /tmp/browser-val-<taskId>-attempt-<visualRetryCount>.png")
+   ```
+
+5. Re-dispatch the browser validator with the new screenshot. Parse the verdict.
+
+6. If VERDICT: PASS:
+   ```
+   Bash("bun run scripts/emit-event.ts 'ralph_wiggum.passed' '{\"orchestrationId\":\"<id>\",\"taskId\":\"<numeric-id>\",\"iterations\":<visualRetryCount>}'")
+   ```
+   Mark task `completed`. Write checkpoint. Break loop. Continue.
+
+7. If VERDICT: FAIL: update `fixAttemptSummary` with failure details. Continue loop.
+
+**On loop exhaustion (visualRetryCount >= 3):**
+
+Emit `ralph_wiggum.exhausted`:
+```
+Bash("bun run scripts/emit-event.ts 'ralph_wiggum.exhausted' '{\"orchestrationId\":\"<id>\",\"taskId\":\"<numeric-id>\",\"iterations\":3}'")
+```
+
+Escalate to user via AskUserQuestion:
+```
+[Ralph Wiggum] Task `<taskId>` failed visual validation after 3 attempts.
+
+Latest screenshot: /tmp/browser-val-<taskId>-attempt-3.png
+
+Visual issues remaining:
+> <latest failure details>
+
+Previous fix attempts:
+<fixAttemptSummary>
+
+How do you want to proceed?
+1. Provide guidance (describe the visual fix)
+2. Skip this task
+3. Abort orchestration
+```
+
+Apply resolution:
+- **"Provide guidance"**: incorporate user guidance, reset `visualRetryCount = 0`, re-enter the Ralph Wiggum loop with the new guidance. This additional cycle is NOT counted against the 3-iteration cap.
+- **"Skip this task"**: mark task `skipped`. Cascade-skip dependents. Write checkpoint. Continue.
+- **"Abort orchestration"**: mark all remaining tasks `aborted`. Write final checkpoint. Go to Step 12 with abort context.
+
+**Dev server lifecycle:**
+After all waves complete, if a dev server was started during this orchestration:
+```
+Bash("kill <dev-server-pid>")
+```
+Emit `devserver.stopped`.
+
+**On VERDICT: FAIL (standard code failure, not browser):** Go to Step 11 for this task.
 
 **After all tasks in a wave complete:**
 
@@ -878,6 +1033,10 @@ Execution summary:
 - parallelWaves: <count of waves that used parallel dispatch>
 - sequentialFallbacks: <count of tasks that fell back to sequential due to conflicts>
 - totalWorktrees: <count of worktrees created>
+- browserValidations: <count of tasks that underwent browser validation>
+- ralphWiggumLoops: <count of Ralph Wiggum loop iterations across all tasks>
+- screenshotsTaken: <total screenshots taken>
+- devServerStarted: true | false
 
 Files created or modified:
 - `<path>` -- <description>
@@ -933,11 +1092,12 @@ Report the full build summary to the user:
 - Clarifying questions asked: N (or "none")
 - Bounce-back events: for each bounce -- task-id, trigger type, resolution applied
 - Resume stats (if this was a resumed run): resumed from Wave N, N tasks already completed and skipped, N tasks re-dispatched
+- Browser validation stats: N tasks browser-validated, N Ralph Wiggum iterations, N screenshots taken, dev server started: true/false
 
 Then emit:
 
 ```
-Bash("bun run scripts/emit-event.ts 'orchestration.completed' '{\"orchestrationId\":\"<id>\",\"verdict\":\"PASS\",\"team\":\"<TEAM>\",\"taskCount\":<n>,\"retriesTotal\":<n>,\"fastPath\":<true|false>,\"clarifyingQuestionsAsked\":<n>,\"codexTasks\":<n>,\"codexFallbacks\":<n>,\"tasksHardened\":<n>,\"bounceBackTotal\":<n>,\"resumed\":<true|false>}'")
+Bash("bun run scripts/emit-event.ts 'orchestration.completed' '{\"orchestrationId\":\"<id>\",\"verdict\":\"PASS\",\"team\":\"<TEAM>\",\"taskCount\":<n>,\"retriesTotal\":<n>,\"fastPath\":<true|false>,\"clarifyingQuestionsAsked\":<n>,\"codexTasks\":<n>,\"codexFallbacks\":<n>,\"tasksHardened\":<n>,\"bounceBackTotal\":<n>,\"resumed\":<true|false>,\"browserValidations\":<n>,\"ralphWiggumLoops\":<n>,\"screenshotsTaken\":<n>,\"devServerStarted\":<true|false>}'")
 ```
 
 **If orchestration aborted:**
@@ -1104,6 +1264,88 @@ checkpoint.written          { currentWave: "completed" }
 orchestration.completed     { verdict: "PASS", bounceBackTotal: 1, resumed: false }
 ```
 
+For a browser validation scenario with Ralph Wiggum loop (UI task with visual failure, fixed on second attempt):
+
+```
+team.resolved               { team: "engineering", builderAgent: "builder", validatorAgent: "validator" }
+orchestration.started       { prompt: "add a user profile card component...", team: "engineering" }
+clarification.skipped       { reason: "component spec is clear" }
+fast_path.evaluated         { triggered: false, reason: "3 tasks across 2 waves" }
+decomposition.completed     { taskCount: 3, waveCount: 2 }
+difficulty.assessed         { tasks: [{ taskId: "define-user-types", difficulty: "standard" }, ...] }
+ui.detected                 { uiTasks: ["implement-profile-card"], possibleUiTasks: [], browserEnabled: true }
+codex.checked               { available: false, noCodexFlag: false }
+spec.written                { specPath: "specs/profile-card.md", team: "engineering" }
+checkpoint.written          { currentWave: 1 }
+plan.presented              { taskCount: 3, waveCount: 2, team: "engineering" }
+plan.approved               { orchestrationId: "orch-1708900000000" }
+spec.hardened               { tasksModified: 1, summary: "added explicit URL path for browser validation" }
+tokens.estimated            { estimatedTokens: 13500, breakdown: { wave1: 4500, wave2: 9000 } }
+
+task.created                { taskId: "1", subject: "Define User types" }
+task.created                { taskId: "2", subject: "Implement ProfileCard component" }
+task.created                { taskId: "3", subject: "Write component tests" }
+
+spec.reread                 { waveNumber: 1 }
+wave.started                { waveNumber: 1, taskIds: ["define-user-types"] }
+  -- 1 task: sequential dispatch
+  agent.dispatched          { role: "builder", taskId: "1", model: "sonnet" }
+  checkpoint.written        { currentWave: 1 }
+  agent.completed           { role: "builder", taskId: "1" }
+  agent.dispatched          { role: "validator", taskId: "1", model: "haiku" }
+  agent.completed           { role: "validator", taskId: "1" }
+  verdict.received          { taskId: "1", verdict: "PASS" }
+  -- no ui tag on define-user-types: skip browser validation
+  checkpoint.written        { currentWave: 1 }
+wave.completed              { waveNumber: 1, verdicts: { "define-user-types": "PASS" } }
+checkpoint.written          { currentWave: 2 }
+
+spec.reread                 { waveNumber: 2 }
+wave.started                { waveNumber: 2, taskIds: ["implement-profile-card", "write-component-tests"] }
+  -- 2 tasks, SEQUENTIAL_MODE=false: parallel dispatch
+  wave.parallel_start       { waveNumber: 2, taskIds: [...], taskCount: 2 }
+  agent.dispatched          { role: "builder", taskId: "2", model: "sonnet", isolation: "worktree" }
+  agent.dispatched          { role: "builder", taskId: "3", model: "sonnet", isolation: "worktree" }
+  -- both builders running concurrently ...
+  agent.completed           { role: "builder", taskId: "2" }
+  agent.completed           { role: "builder", taskId: "3" }
+  -- merge worktree diffs: no conflicts
+  agent.dispatched          { role: "validator", taskId: "2", model: "haiku", isolation: "worktree" }
+  agent.dispatched          { role: "validator", taskId: "3", model: "haiku", isolation: "worktree" }
+  agent.completed           { role: "validator", taskId: "2" }
+  agent.completed           { role: "validator", taskId: "3" }
+  verdict.received          { taskId: "2", verdict: "PASS" }   -- standard code validation PASS
+  verdict.received          { taskId: "3", verdict: "PASS" }
+  -- taskId: "2" is tagged ui:true -> proceed to browser validation
+  -- taskId: "3" has no ui tag -> mark completed immediately
+  devserver.started         { pid: 14302, cmd: "bun run dev" }
+  browser.validation_started { taskId: "2", screenshotPath: "/tmp/browser-val-2.png" }
+  -- screenshot taken: /tmp/browser-val-2.png
+  -- browser validator dispatched: visual check against acceptance criteria
+  -- VERDICT: FAIL failure_mode:visual reason:"avatar image is missing, only name and email rendered"
+  -- enter Ralph Wiggum loop
+  ralph_wiggum.iteration    { taskId: "2", iteration: 1, maxIterations: 3 }
+  -- re-dispatch builder with screenshot + failure details
+  agent.dispatched          { role: "builder", taskId: "2", model: "sonnet" }
+  agent.completed           { role: "builder", taskId: "2" }
+  -- take new screenshot: /tmp/browser-val-2-attempt-1.png
+  -- re-dispatch browser validator
+  -- VERDICT: PASS -- avatar renders correctly, layout matches spec
+  ralph_wiggum.passed       { taskId: "2", iterations: 1 }
+  -- task 2 marked completed
+  wave.parallel_complete    { waveNumber: 2, parallelTasks: 2, conflictTasks: 0, sequentialFallbacks: 0 }
+wave.completed              { waveNumber: 2, verdicts: { "implement-profile-card": "PASS", "write-component-tests": "PASS" } }
+checkpoint.written          { currentWave: "completed" }
+devserver.stopped           { pid: 14302 }
+
+orchestration.completed     { verdict: "PASS", team: "engineering", taskCount: 3, retriesTotal: 0,
+                              fastPath: false, clarifyingQuestionsAsked: 0, codexTasks: 0,
+                              codexFallbacks: 0, tasksHardened: 1, bounceBackTotal: 0,
+                              parallelWaves: 1, totalWorktrees: 2, sequentialFallbacks: 0,
+                              browserValidations: 1, ralphWiggumLoops: 1, screenshotsTaken: 2,
+                              devServerStarted: true, resumed: false }
+```
+
 For a resume scenario (`--resume specs/rest-api.md`):
 
 ```
@@ -1122,24 +1364,26 @@ wave.started                { waveNumber: 2, taskIds: ["implement-get-users", ..
 
 ## What This Stage Proves
 
-Stage 8 proves the orchestrator can dispatch independent tasks within the same wave concurrently using git worktree isolation, merge results after all builders complete, and fall back gracefully to sequential execution on conflict. Building on all previous stages, the protocol demonstrates:
+Stage 9 proves the orchestrator can validate UI-facing tasks visually using a live browser, iterate on visual failures through a bounded screenshot-fix-screenshot cycle (Ralph Wiggum loop), and manage a dev server lifecycle as a shared orchestration resource. Building on all previous stages, the protocol demonstrates:
 
-- **Parallel wave execution** (Step 10): When a wave contains 2+ tasks and SEQUENTIAL_MODE is false, all builders are dispatched in a single message (concurrent execution). Each builder gets an isolated git worktree so file writes cannot conflict.
-- **Worktree isolation** (Step 10): Each parallel builder operates in its own `git worktree` -- a lightweight copy of the repository at a separate path. Builders write freely without coordination. Results are merged after all complete.
-- **Conflict resolution** (Step 10): If two parallel builders modify the same file, the merge step detects the conflict. Conflicting tasks are automatically re-executed sequentially (not restarted from scratch -- their worktree outputs are discarded and the task is re-dispatched in standard sequential mode).
-- **--sequential flag** (Step 1): Passing `--sequential` to `/orchestrate` disables parallel dispatch for the entire run. Useful for debugging or when the codebase has fragile shared state that parallel writes would corrupt.
-- **HITL bounce-back** (Step 10): Preserved from Stage 7 -- bounce-back detection runs on each builder's output after merge. Triggers pause the orchestration and present bounded resolution options.
-- **Hydration checkpoints** (Step 10, throughout): All state -- including parallel execution stats -- is persisted to the spec file after each state change.
-- **Idempotent resume** (Step 1 resume branch): `--resume` hydrates all state including Sequential Mode flag, jumping directly to the correct wave.
+- **UI task detection** (Step 4c): After decomposition, each task's description is scanned for UI signal keywords. Tasks matching 2+ signals are tagged `ui: true`; tasks matching 1 signal are tagged `ui: possible`. Tags are recorded in the spec file and used at validation time to route to browser validation.
+- **Browser validation** (Step 10): After the standard validator issues VERDICT: PASS for a `ui: true` or `ui: possible` task, the orchestrator takes a screenshot using the agent-browser CLI and dispatches the validator in browser-validation mode. The validator evaluates visual and layout correctness from the screenshot.
+- **Ralph Wiggum loop** (Step 10): When browser validation fails with `failure_mode:visual`, the orchestrator re-dispatches the builder with the screenshot and failure details, takes a new screenshot, and re-validates. This cycle repeats up to 3 times. On exhaustion, HITL escalation presents the user with the most recent screenshot and fix history.
+- **--no-browser flag** (Step 1): Passing `--no-browser` to `/orchestrate` skips all browser validation for the entire run. UI tasks fall back to standard code validation. Useful for CI environments without a display or when the dev server is not configured.
+- **Dev server lifecycle** (Step 10): The orchestrator starts the dev server before the first UI task validation and stops it after the last browser-tagged wave completes. The dev server is a shared resource -- started once, not per-task. If it fails to start, browser validation is disabled for all remaining tasks.
+- **Parallel wave execution** (Step 10): Preserved from Stage 8 -- independent tasks within a wave are dispatched concurrently using git worktree isolation. Results are merged after all builders complete, then validators run on the merged state.
+- **HITL bounce-back** (Step 10): Preserved from Stage 7 -- bounce-back detection runs on each builder's output. Triggers pause the orchestration and present bounded resolution options.
+- **Hydration checkpoints** (Step 10, throughout): All state -- including browser validation stats and BROWSER_ENABLED flag -- is persisted to the spec file after each state change.
+- **Idempotent resume** (Step 1 resume branch): `--resume` hydrates all state including Sequential Mode and Browser Enabled flags, jumping directly to the correct wave.
 - **Difficulty assessment** (Step 4b): Every task is scored against hard/standard signal lists. Hard tasks are candidates for Codex escalation.
 - **Codex CLI escalation** (Step 10): Hard tasks are dispatched to `codex exec` when available, falling back to the standard builder transparently on failure.
 - **Spec hardening** (Step 7b): After plan approval, every task description is audited for ambiguity signals and rewritten with concrete file paths, measurable acceptance criteria, and explicit error responses.
 
 ```
-User Prompt (with optional --resume, --team, --no-codex, --sequential flags)
+User Prompt (with optional --resume, --team, --no-codex, --sequential, --no-browser flags)
     |
     v
-[Orchestrator] -- Step 1: Parse + Resolve Team + Parse Flags
+[Orchestrator] -- Step 1: Parse + Resolve Team + Parse Flags (incl. --no-browser -> BROWSER_ENABLED)
     |
     |-- --resume present?
     |       YES: Hydrate from checkpoint -> jump to Step 10 at restored wave
@@ -1162,6 +1406,7 @@ User Prompt (with optional --resume, --team, --no-codex, --sequential flags)
 [Orchestrator] -- Step 4: Decompose into task graph
     |
     |-- Step 4b: Difficulty Assessment (tag each task standard|hard, check Codex availability)
+    |-- Step 4c: UI Task Detection (scan for UI signals, tag ui:true | ui:possible)
     |-- Step 5: Compute waves
     |-- Step 6: Write spec file + initial hydration checkpoint
     |
@@ -1191,7 +1436,8 @@ Wave 1..N:
     |   |-- On conflict: emit wave.conflict_detected, re-execute conflicting tasks sequentially
     |   |-- Bounce-back detection on each builder's output
     |   |-- Dispatch all validators concurrently (single message, isolation: worktree)
-    |   |-- Parse verdicts; on FAIL: retry protocol per task
+    |   |-- Parse verdicts; on PASS + ui:true/possible -> browser validation
+    |   |-- On FAIL (code): retry protocol per task
     |   |-- Emit wave.parallel_complete (with parallel/conflict/fallback counts)
     |
     |-- [SEQUENTIAL PATH]
@@ -1206,15 +1452,30 @@ Wave 1..N:
     |   |   |   |-- "Abort": mark aborted, write checkpoint, go to Step 12
     |   |   |-- Dispatch Validator -> VERDICT: PASS/FAIL
     |   |   |-- Bounce-back detection (design-concern) -> if advisory: pause, present options
-    |   |   |-- On PASS: update completed, write checkpoint
-    |   |   |-- On FAIL: retry up to 3x (write checkpoint per retry)
+    |   |   |-- On PASS (code):
+    |   |   |   |-- task tagged ui:true or ui:possible?
+    |   |   |   |   YES: Browser Validation
+    |   |   |   |   |-- BROWSER_ENABLED=false OR no DEV_SERVER_CMD -> skip (browser.skipped)
+    |   |   |   |   |-- Ensure dev server running (start if needed, emit devserver.started)
+    |   |   |   |   |-- Take screenshot (agent-browser navigate + screenshot)
+    |   |   |   |   |-- Dispatch browser validator -> VERDICT: PASS/FAIL failure_mode:visual
+    |   |   |   |   |-- On PASS: emit browser.passed -> task completed
+    |   |   |   |   |-- On FAIL: Ralph Wiggum loop (up to 3 iterations)
+    |   |   |   |   |   |-- Emit ralph_wiggum.iteration
+    |   |   |   |   |   |-- Re-dispatch builder with screenshot + failure details
+    |   |   |   |   |   |-- Take new screenshot, re-validate
+    |   |   |   |   |   |-- On PASS: emit ralph_wiggum.passed -> task completed
+    |   |   |   |   |   |-- On exhaustion (3 iterations): emit ralph_wiggum.exhausted -> HITL
+    |   |   |   |   NO: task completed, write checkpoint
+    |   |   |-- On FAIL (code): retry up to 3x (write checkpoint per retry)
     |   |   |   |-- On retry exhaustion: ask user (skip/guide/abort)
     |
     v
 Step 12: Write Result section + final checkpoint (status: completed | aborted)
+         Stop dev server if started (kill <pid>, emit devserver.stopped)
     |
     v
-Step 13: Report -- verdicts, retry stats, Codex routing, hardening, bounce-backs, parallel stats, resume stats
+Step 13: Report -- verdicts, retry stats, Codex routing, hardening, bounce-backs, parallel stats, browser validation stats, resume stats
 ```
 
 The orchestrator never touches files. Builder (or Codex) writes. Validator reads. Roles are absolute. The spec file is the shared source of truth between all agents and the persistence layer for cross-session resume.
@@ -1245,7 +1506,8 @@ The `--team` flag selects the profile. If the profile file does not exist, abort
 
 ## What This Stage Does NOT Do
 
-This is Stage 8 (Parallel Wave Execution + Worktree Isolation). The following capabilities are intentionally absent -- they are added in later stages:
+This is Stage 9 (Browser Validation + Ralph Wiggum Loop). The following capabilities are intentionally absent:
 
-- **No browser-based validation** -- validators check code, not visual output (Stage 9)
+- **No visual regression testing against baselines** -- no pixel-diff comparison against saved reference screenshots (future)
+- **No cross-browser testing** -- single browser only (Chromium via agent-browser)
 - **No live API cost data** -- token estimation uses fixed per-dispatch assumptions, not actual usage reported by the API (future)

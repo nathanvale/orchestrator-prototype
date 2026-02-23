@@ -2,7 +2,7 @@
 description: Return to the learning lobby on main
 ---
 
-You are on branch `orchestration/8-parallel`.
+You are on branch `orchestration/9-browser`.
 
 To return to the lobby: `git checkout main`
 

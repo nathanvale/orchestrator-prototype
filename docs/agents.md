@@ -111,6 +111,46 @@ This is the proof that the orchestrator is agent-agnostic -- it is a true Higher
 
 ---
 
+---
+
+## Stage 9: Browser Validator Mode
+
+Stage 9 does not introduce a new agent type. Instead, the existing Validator agent gains a second operating mode triggered by the UI task tag.
+
+### Browser Validator (Validator in Browser-Validation Mode)
+
+| Property | Value |
+|----------|-------|
+| Model | `claude-haiku-4-5` (same as standard Validator) |
+| Role | Visual correctness verification agent |
+| Tools | Read, Glob, Grep, Bash, TaskGet, TaskUpdate |
+| Disallowed | Write, Edit, NotebookEdit (same as standard Validator) |
+
+**When invoked:**
+After the standard Validator issues VERDICT: PASS for a task tagged `ui: true` or `ui: possible`, the orchestrator dispatches the same Validator agent with a different prompt -- one that references a screenshot file and visual acceptance criteria.
+
+**What changes in browser-validation mode:**
+- Receives a screenshot path (e.g., `/tmp/browser-val-3.png`) as part of its prompt
+- Evaluates visual and layout correctness, not just code structure
+- Must end its report with exactly one of: `VERDICT: PASS` or `VERDICT: FAIL failure_mode:visual reason:"<description>"`
+- The `failure_mode:visual` tag is what triggers the Ralph Wiggum loop rather than the standard Step 11 retry protocol
+
+**What stays the same:**
+- Same agent definition file (`.claude/agents/validator.md`)
+- Same model (haiku)
+- Same disallowed tools (cannot modify files)
+- Same binary verdict requirement
+
+**The key insight:** Browser validation is a prompt-level mode switch, not a new agent. The orchestrator's routing logic determines when to send the standard validation prompt versus the browser-validation prompt. This keeps the agent catalog minimal while extending validation capability.
+
+### Why Not a Separate Browser-Validator Agent?
+
+The reasoning mirrors the Validator's original design: the validation task is mechanically simple. Whether checking that a named export exists in a TypeScript file or verifying that a button is centered in a screenshot, haiku is capable. A separate `browser-validator` agent would duplicate the same definition with only a prompt difference -- that difference belongs in the orchestrator's routing logic, not in the agent catalog.
+
+This is also the HOP pattern in action: the orchestrator is the variable part. The agents are stable.
+
+---
+
 ## Related Documents
 
 | Document | What It Covers |
