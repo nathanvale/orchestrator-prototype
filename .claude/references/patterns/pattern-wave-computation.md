@@ -102,4 +102,11 @@ The `spec.reread` event is emitted at each wave boundary so the observability da
 
 ## Source Anchors
 
-Source: `docs/patterns/wave-computation.md` on `stage/3-full`
+Stage 2 (concept introduction):
+- `orchestration/2-dag:.claude/skills/orchestrator/SKILL.md:L120-L200` -- Kahn's algorithm implementation, wave assignment loop, in-degree map construction
+
+Stage 2 (dag-execution reference):
+- `orchestration/2-dag:.claude/skills/orchestrator/references/dag-execution.md` -- full Kahn's algorithm pseudocode with cycle detection
+
+Stage 3 (full proof):
+- `orchestration/3-full:.claude/skills/orchestrator/SKILL.md:L180-L260` -- wave execution loop with spec re-read, spec.reread event emission

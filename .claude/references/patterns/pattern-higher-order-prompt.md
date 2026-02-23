@@ -97,4 +97,10 @@ The Stage 4 `--team` flag changes the HOP Configuration block values before the 
 
 ## Source Anchors
 
-Source: `docs/patterns/higher-order-prompt.md` on `stage/3-full`
+Stage 1 (concept introduction):
+- `orchestration/1-dispatch:.claude/skills/orchestrator/SKILL.md:L1-L30` -- HOP Configuration block with BUILDER_AGENT and VALIDATOR_AGENT variables declared
+
+Stage 4 (proof -- team switching):
+- `orchestration/4-hop:.claude/skills/orchestrator/SKILL.md:L1-L60` -- --team flag parsing, team resolution, HOP config populated from profile
+- `orchestration/4-hop:.claude/skills/orchestrator/teams/engineering.md` -- Engineering team profile
+- `orchestration/4-hop:.claude/skills/orchestrator/teams/research.md` -- Research team profile

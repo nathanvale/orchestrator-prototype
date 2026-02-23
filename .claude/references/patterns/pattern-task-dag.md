@@ -109,4 +109,8 @@ Dependencies should reflect real structural constraints (A imports B, B's types 
 
 ## Source Anchors
 
-Source: `docs/patterns/task-dag.md` on `stage/3-full`
+Stage 2 (concept introduction):
+- `orchestration/2-dag:.claude/skills/orchestrator/SKILL.md:L80-L160` -- task decomposition, dependency declarations, addBlockedBy enforcement
+
+Stage 3 (full proof):
+- `orchestration/3-full:.claude/skills/orchestrator/SKILL.md:L80-L180` -- DAG with cycle detection, spec file task graph table, wave assignments

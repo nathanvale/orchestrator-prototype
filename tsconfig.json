@@ -1,4 +1,5 @@
 {
+	"//": "rootDir and include reference src/ which exists on module branches, not on main (lobby)",
 	"compilerOptions": {
 		"baseUrl": ".",
 		"declaration": true,

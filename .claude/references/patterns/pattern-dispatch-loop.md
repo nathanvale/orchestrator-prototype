@@ -91,4 +91,8 @@ Observability events (`orchestration.started`, `task.created`, `agent.dispatched
 
 ## Source Anchors
 
-Source: `docs/patterns/dispatch-loop.md` on `stage/3-full`
+Stage 1 (concept introduction):
+- `orchestration/1-dispatch:.claude/skills/orchestrator/SKILL.md:L1-L80` -- 5-step dispatch protocol, foreground dispatch, observability events
+
+Stage 3 (full proof):
+- `orchestration/3-full:.claude/skills/orchestrator/SKILL.md:L1-L120` -- dispatch loop with retry, clarifying questions, fast path integrated

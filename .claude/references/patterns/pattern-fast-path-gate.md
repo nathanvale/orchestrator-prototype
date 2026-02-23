@@ -108,4 +108,5 @@ On `VERDICT: FAIL` from a fast-path task, the Orchestrator presents the failure 
 
 ## Source Anchors
 
-Source: `docs/patterns/fast-path-gate.md` on `stage/3-full`
+Stage 3 (concept introduction and proof):
+- `orchestration/3-full:.claude/skills/orchestrator/SKILL.md:L60-L120` -- fast-path criteria evaluation in Step 3, fast-path.taken event, single Builder/Validator dispatch path

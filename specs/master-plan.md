@@ -102,12 +102,15 @@ A Higher-Order Prompt -- a prompt that takes another prompt as a parameter (like
       fast-path-gate.md               # Stage 3
       iterative-refinement.md          # Stage 3
       team-profiles.md                 # Stage 4
+      plugin-architecture.md           # Stage 5
       difficulty-routing.md            # Stage 6
+      spec-hardening.md                # Stage 6
       hitl-protocol.md                 # Stage 7
       hydration-pattern.md             # Stage 7
       parallel-dispatch.md             # Stage 8
       worktree-isolation.md            # Stage 8
       browser-validation.md            # Stage 9
+      ralph-wiggum-loop.md             # Stage 9
 ```
 
 ---
@@ -116,25 +119,26 @@ A Higher-Order Prompt -- a prompt that takes another prompt as a parameter (like
 
 | Stage | Old Branch (`stage/*`) | New Branch (`orchestration/*`) | Status |
 |-------|----------------------|-------------------------------|--------|
-| 1 | `stage/1-dispatch` (frozen) | `orchestration/1-dispatch` | Needs rebuild (rename + add /lobby) |
-| 2 | `stage/2-dag` (frozen) | `orchestration/2-dag` | Needs rebuild (rename + add /lobby) |
-| 3 | `stage/3-full` (frozen) | `orchestration/3-full` | Needs rebuild (rename + add /lobby) |
-| 4 | on `chore/tune-product-direction` | `orchestration/4-hop` | Needs rebuild from orchestration/3-full |
-| 5 | on `chore/tune-product-direction` | `orchestration/5-plugin` | Needs rebuild from orchestration/4-hop |
-| 6 | on `chore/tune-product-direction` | `orchestration/6-codex` | Needs rebuild from orchestration/5-plugin |
-| 7 | on `chore/tune-product-direction` | `orchestration/7-hitl` | Needs rebuild from orchestration/6-codex |
-| 8-9 | not yet created | `orchestration/8-parallel`, `orchestration/9-browser` | Planned |
+| 1 | `stage/1-dispatch` (frozen) | `orchestration/1-dispatch` | Complete -- pushed, immutable |
+| 2 | `stage/2-dag` (frozen) | `orchestration/2-dag` | Complete -- pushed, immutable |
+| 3 | `stage/3-full` (frozen) | `orchestration/3-full` | Complete -- pushed, immutable |
+| 4 | on `chore/tune-product-direction` (reference only) | `orchestration/4-hop` | Complete -- pushed, immutable |
+| 5 | on `chore/tune-product-direction` (reference only) | `orchestration/5-plugin` | Complete -- pushed, immutable |
+| 6 | on `chore/tune-product-direction` (reference only) | `orchestration/6-codex` | Complete -- pushed, immutable |
+| 7 | on `chore/tune-product-direction` (reference only) | `orchestration/7-hitl` | Complete -- pushed, immutable |
+| 8 | not applicable | `orchestration/8-parallel` | Complete -- pushed, immutable |
+| 9 | not applicable | `orchestration/9-browser` | Complete -- pushed, immutable |
 
-**Last checkpoint:** Stages 1-3 complete on `stage/*` branches. Stages 4-7 implemented but accumulated on `chore/tune-product-direction` (1059-line SKILL.md). Lobby restructure plan written.
+**Last checkpoint:** Stages 8-9 complete. All 9 orchestration stages built as clean, isolated `orchestration/*` branches. Main is the lobby -- `/learn`, `/dojo`, `/advisor`, and the full 19-pattern library. Source anchors verified against actual branch content.
 
-**Next step:** Execute the lobby restructure plan (`docs/plans/2026-02-23-refactor-lobby-branch-restructure-plan.md`):
-1. Strip main to lobby (Phase 1)
-2. Expand dojo pattern library (Phase 2)
-3. Rebuild orchestration/1-3 from stage/1-3 (Phase 3)
-4. Rebuild orchestration/4-7 from scratch (Phases 4-7)
-5. Finalize anchors, master plan, branch protection (Phase 8)
+**Completed phases:**
+1. Strip main to lobby -- done
+2. Expand dojo pattern library (9 existing + 6 new patterns) -- done
+3. Rebuild orchestration/1-3 from stage/1-3 -- done
+4. Rebuild orchestration/4-7 from scratch -- done
+5. Finalize anchors, master plan, README, branch protection -- done
 
-**Important:** The original `stage/*` branches remain frozen and protected. The new `orchestration/*` branches supersede them.
+**Important:** The original `stage/*` branches remain frozen and protected. The `orchestration/*` branches supersede them and are also immutable after creation.
 
 ---
 
@@ -247,16 +251,9 @@ Each numbered group maps to one commit in the branch history.
 
 ## Stages 4-7: Per-Stage Build Plans
 
-Stages 1-3 were built under the original model (detailed file tables in this master plan). Stages 4-7 are being rebuilt under the new lobby framework, which introduces requirements the original file tables don't account for (`/lobby` command, cross-branch `git show` hints, CLAUDE.md templates, lobby pattern reference updates, `orchestration/*` naming, immutable branches).
+Stages 4-7 were rebuilt under the lobby framework, which introduced requirements the original file tables don't account for (`/lobby` command, cross-branch `git show` hints, CLAUDE.md templates, lobby pattern reference updates, `orchestration/*` naming, immutable branches).
 
-**The master plan is now the curriculum** -- it defines WHAT each stage teaches, which patterns it introduces, and how to verify it works. The HOW (exact file tables, commit sequences, lobby integration steps) lives in per-stage build plans created via `/workflows:plan` before each stage is implemented.
-
-Each per-stage plan will:
-1. Read this master plan for scope (patterns, verification, "NOT in Stage N")
-2. Read the restructure plan for framework rules (`docs/plans/2026-02-23-refactor-lobby-branch-restructure-plan.md`)
-3. Read `chore/tune-product-direction` for reference material (the existing 1059-line SKILL.md)
-4. Produce exact file tables respecting the lobby framework
-5. Include a "update lobby on main" step (add pattern references, update source anchors)
+**The master plan is the curriculum** -- it defines WHAT each stage teaches, which patterns it introduces, and how to verify it works. The HOW (exact file tables, commit sequences, lobby integration steps) lived in per-stage build plans created before each stage was implemented.
 
 ---
 
@@ -356,14 +353,45 @@ Each per-stage plan will:
 
 ---
 
-## Stages 8-9: Advanced Capabilities
+## Stage 8: Parallel Wave Execution + Worktree Isolation
 
-Each gets its own detailed plan before implementation. See stage descriptions in the "Stages at a Glance" table above.
+**Branch:** `orchestration/8-parallel` (from `orchestration/7-hitl`)
 
-| Stage | Branch | Parent |
-|-------|--------|--------|
-| 8 | `orchestration/8-parallel` | `orchestration/7-hitl` |
-| 9 | `orchestration/9-browser` | `orchestration/8-parallel` |
+**Goal:** Dispatch independent tasks within the same wave concurrently using git worktrees for file isolation. Fall back to sequential on conflict.
+
+**Patterns introduced:**
+- `docs/patterns/parallel-dispatch.md`
+- `docs/patterns/worktree-isolation.md`
+
+**What this stage adds to SKILL.md (~1250 lines):** Parallel dispatch decision per wave, worktree creation via `isolation: "worktree"`, diff-and-apply merge protocol, conflict detection and sequential fallback, `--sequential` flag, parallel validator dispatch, parallel execution stats in summary
+
+**Verification:**
+1. `/orchestrate "add GET /users, POST /users, DELETE /users, and GET /health"` -- expect parallel dispatch for independent tasks
+2. `/orchestrate "add GET /users" --sequential` -- expect sequential execution
+3. Multi-wave task with 3 independent tasks in wave 2 -- expect parallel dispatch
+
+**NOT in Stage 8:** No browser validation. No new agent types. Same builder/validator running in parallel.
+
+---
+
+## Stage 9: Browser Validation + Ralph Wiggum Loop
+
+**Branch:** `orchestration/9-browser` (from `orchestration/8-parallel`)
+
+**Goal:** Validate UI-facing tasks visually using the agent-browser CLI. Retry visual failures with the Ralph Wiggum loop (screenshot-fix-screenshot cycle).
+
+**Patterns introduced:**
+- `docs/patterns/browser-validation.md`
+- `docs/patterns/ralph-wiggum-loop.md`
+
+**What this stage adds to SKILL.md (~1500 lines):** Step 4c UI task detection, browser validation path after standard PASS for UI tasks, Ralph Wiggum loop (max 3 visual retry iterations), dev server lifecycle management, `--no-browser` flag, browser-validation.md reference file, browser stats in summary
+
+**Verification:**
+1. `/orchestrate "add a user profile card component with avatar, name, and email"` -- expect browser validation
+2. `/orchestrate "fix the layout bug where the sidebar overlaps the main content"` -- expect Ralph Wiggum loop
+3. `/orchestrate "add a REST API endpoint" --no-browser` -- expect no browser validation
+
+**NOT in Stage 9:** No visual regression testing against baselines. No cross-browser testing. No pixel-diff comparison.
 
 ---
 
@@ -390,9 +418,9 @@ main (lobby) -- /learn, /dojo, /advisor, pattern library, NO orchestrator
                                       |
                                       +-- orchestration/7-hitl (~1010 lines)
                                             |
-                                            +-- orchestration/8-parallel (planned)
+                                            +-- orchestration/8-parallel (~1250 lines)
                                                   |
-                                                  +-- orchestration/9-browser (planned)
+                                                  +-- orchestration/9-browser (~1500 lines)
 ```
 
 ### What lives on main (lobby)

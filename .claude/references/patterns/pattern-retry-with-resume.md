@@ -104,4 +104,6 @@ The fast path does not support retry-with-resume. Fast-path failures escalate di
 
 ## Source Anchors
 
-Source: `docs/patterns/retry-with-resume.md` on `stage/3-full`
+Stage 3 (concept introduction and proof):
+- `orchestration/3-full:.claude/skills/orchestrator/SKILL.md:L260-L340` -- retry decision tree, Builder resume dispatch, fresh Validator dispatch, escalation after 3 failures
+- `orchestration/3-full:.claude/skills/orchestrator/SKILL.md:L340-L380` -- retryCount persistence in spec file, agentId storage for resume

@@ -105,4 +105,6 @@ The token estimate formula is approximate by design. The goal is a mental model 
 
 ## Source Anchors
 
-Source: `docs/patterns/iterative-refinement.md` on `stage/3-full`
+Stage 3 (concept introduction and proof):
+- `orchestration/3-full:.claude/skills/orchestrator/SKILL.md:L380-L460` -- plan presentation loop in Step 7, task graph table format, user approval/modify/cancel options
+- `orchestration/3-full:.claude/skills/orchestrator/SKILL.md:L460-L490` -- token estimation in Step 8, plan.approved event emission
