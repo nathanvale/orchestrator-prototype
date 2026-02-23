@@ -41,7 +41,6 @@ git checkout orchestration/9-browser    # Latest: Browser validation + Ralph Wig
   skills/
     agentic-dojo/     # /dojo -- pattern teacher
     pattern-advisor/  # /advisor -- pattern recommender
-    module-branch-validator/  # Validation skill for module branch framework compliance
   references/
     patterns/         # Structured pattern refs (11-slot frontmatter)
   settings.json       # Tool permissions
