@@ -404,6 +404,6 @@ Built with [bun-typescript-starter](https://github.com/nathanvale/bun-typescript
 
 | | |
 |---|---|
-| **Previous** | [Stage 7: HITL Bounce-Back](../../tree/orchestration/7-hitl) |
-| **Next** | [Stage 9: Browser Validation](../../tree/orchestration/9-browser) |
+| **Previous** | [Stage 8: Parallel Execution](../../tree/orchestration/8-parallel) |
+| **Next** | Planned (future stages) |
 | **All Modules** | [Main (Lobby)](../../tree/main) |
