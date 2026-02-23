@@ -2,11 +2,60 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Orchestrator Prototype -- Learning Lobby
+## Dev Branch -- Build & Test Workbench
 
-This is the **lobby** branch of the HOP Orchestrator prototype -- a learning hub for agent orchestration patterns. Main holds the learning tools and pattern library. Each module branch (`orchestration/1-dispatch`, `orchestration/2-dag`, etc.) is a standalone lesson you checkout to see a working orchestrator at that complexity level.
+**You are on the `dev` branch.** This is the maintainer's workbench for building new modules, testing skills, and staging lobby content before it reaches main. Dev has capabilities that main does not -- agents, orchestrator, `/create-module` -- because it is a build environment, not a user-facing branch.
 
 **Stack:** TypeScript, Bun, Biome, Claude Code agents/skills/commands
+
+### Dev Branch Rules
+
+**REBASE ONLY:** Dev stays current with main via `git rebase main`. Never merge dev into main. Lobby content moves to main via feature branches (PRs), never directly from dev.
+
+**Dev-exclusive artifacts** (these files exist ONLY on dev, never on main):
+
+| Path | Purpose |
+|------|---------|
+| `.claude/agents/builder.md` | Builder agent for module construction |
+| `.claude/agents/validator.md` | Validator agent for module verification |
+| `.claude/skills/orchestrator/` | Orchestrator skill (dev version) |
+| `.claude/commands/orchestrate.md` | `/orchestrate` command shim |
+| `docs/` | Patterns source docs, plans, brainstorms, agents catalog |
+| `specs/` | Master plan, stage definitions, examples |
+
+**Shared with main** (these exist on both branches -- edits here get cherry-picked/PR'd to main):
+
+| Path | Purpose |
+|------|---------|
+| `.claude/skills/agentic-dojo/` | Pattern teacher |
+| `.claude/skills/pattern-advisor/` | Pattern recommender |
+| `.claude/skills/module-branch-validator/` | Module validation |
+| `.claude/references/patterns/` | 11-slot pattern refs |
+| `.claude/commands/learn.md` | `/learn` command |
+| `.claude/commands/lobby.md` | `/lobby` command |
+
+### How Content Flows: Dev -> Main
+
+```
+dev (build here) --> feature branch (PR) --> main (lobby)
+                     ^                        |
+                     |                        |
+                     +--- git rebase main ----+
+```
+
+1. Build/test on dev
+2. Create a feature branch from main for the lobby changes
+3. Cherry-pick or recreate the lobby-safe commits onto the feature branch
+4. PR the feature branch to main
+5. After merge, rebase dev onto main: `git rebase main`
+
+**NEVER merge dev directly into main.** Dev has agents and orchestrator artifacts that violate main's rules.
+
+---
+
+## Orchestrator Prototype -- Learning Lobby
+
+This repo is the HOP Orchestrator prototype -- a learning hub for agent orchestration patterns. Main holds the learning tools and pattern library. Each module branch (`orchestration/1-dispatch`, `orchestration/2-dag`, etc.) is a standalone lesson you checkout to see a working orchestrator at that complexity level.
 
 ---
 
@@ -198,10 +247,21 @@ git show main:.claude/references/patterns/pattern-wave-computation.md
 2. Add JSDoc to exported functions
 3. Use `.claude/references/patterns/` as the single source of truth for pattern content
 4. Use 11-slot frontmatter in all pattern reference files
+5. Use feature branches + PRs to move lobby content from dev to main
 
 ### NEVER
 
 1. Push directly to main
-2. Add orchestrator execution artifacts to main (no agents, no orchestrate.md, no emit-event)
-3. Use destructive git commands (`reset --hard`, `push --force`)
-4. Add orchestration logic to main -- it belongs on module branches only
+2. Merge dev into main (use feature branch PRs instead)
+3. Add orchestrator execution artifacts to main (no agents, no orchestrate.md, no emit-event)
+4. Use destructive git commands (`reset --hard`, `push --force`)
+5. Add orchestration logic to main -- it belongs on module branches only
+
+### Dev Branch Permissions
+
+On dev, these are **allowed** (unlike main):
+- `.claude/agents/` -- builder and validator agents
+- `.claude/skills/orchestrator/` -- orchestrator with dynamic skill injection
+- `.claude/commands/orchestrate.md` -- orchestrate command
+- `docs/plans/` -- work-in-progress implementation plans
+- Running `/orchestrate`, `/create-module`, and build workflows
