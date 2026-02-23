@@ -10,9 +10,9 @@ An educational repository for learning agent orchestration patterns incrementall
 
 This is a prototype of the HOP (Higher-Order Prompt) Orchestrator - a prompt that takes other prompts as parameters, like a higher-order function. The fixed wrapper handles orchestration (task creation, agent dispatch, validation). The variable parameters handle identity (which builder, which validator, which team).
 
-Stage 7 adds HITL (Human-In-The-Loop) bounce-back and persistence via hydration checkpoints to the complete 14-step dispatch protocol. When the orchestrator detects a blocking situation mid-execution (conflicting patterns, architectural decisions, missing dependencies), it pauses and presents bounded resolution options to the user. All orchestration state is persisted to the spec file after each state change, enabling cross-session resume via the `--resume` flag.
+Stage 8 adds parallel wave execution and worktree isolation to the complete 14-step dispatch protocol. When a wave contains multiple independent tasks, the orchestrator dispatches their builders concurrently -- each in a temporary git worktree for file isolation. Results are merged after all builders complete, then validators run on the merged state. If merge conflicts occur, conflicting tasks fall back to sequential re-execution automatically.
 
-This is the final stage in the current orchestration module. The next stages (8+) are planned: Stage 8 adds parallel wave execution, Stage 9 adds browser-based validation.
+This builds on all previous stages: HITL bounce-back (Stage 7), Codex routing (Stage 6), spec hardening (Stage 6), team switching (Stage 4), etc.
 
 The prototype repo is a learning tool: checkout any stage branch to see the orchestrator at that complexity level. The living, maintained implementation lives in the plugin: `/plugin install agentic-orchestration@side-quest`.
 
@@ -47,8 +47,12 @@ tests/              # Tests
 ## How to Use
 
 ```bash
-# Standard orchestration -- difficulty routing, spec hardening, and hydration run automatically
-/orchestrate "add a REST API with GET /users, POST /users, and GET /users/:id"
+# Standard orchestration -- parallel dispatch runs automatically for multi-task waves
+/orchestrate "add a REST API with GET /users, POST /users, and DELETE /users"
+# Expect parallel dispatch for all 3 endpoint tasks in the same wave
+
+# Force sequential execution (Stage 7 behavior) -- useful for debugging
+/orchestrate "add GET /users, POST /users, DELETE /users" --sequential
 
 # Hard task routing -- tasks touching 5+ files are escalated to Codex CLI
 /orchestrate "refactor the user module from class-based to functional across 8 files"
@@ -63,68 +67,70 @@ tests/              # Tests
 /orchestrate --resume specs/rest-api.md
 # The orchestrator will:
 # 1. Read the spec file's Hydration Checkpoint section
-# 2. Restore all state: wave position, agent sessions, retry counters, bounce history
+# 2. Restore all state: wave position, agent sessions, retry counters, bounce history, sequential mode
 # 3. Re-present any unresolved bounce-backs
 # 4. Skip completed tasks (idempotency)
-# 5. Resume from the correct wave
-
-# Bounce-back scenario (automatic -- no flag needed)
-/orchestrate "add a user module using class-based OOP patterns"
-# If the builder detects conflicting patterns in existing code:
-# 1. The orchestrator pauses and presents the conflict
-# 2. You choose: proceed with guidance, skip, restructure, or abort
-# 3. The orchestrator resumes with your decision applied
-# 4. A hydration checkpoint is written so you can --resume if needed
+# 5. Resume from the correct wave with the same dispatch strategy (parallel or sequential)
 ```
 
 ---
 
 ## What This Stage Adds
 
-Stage 7 adds HITL bounce-back and persistence to the 14-step dispatch protocol.
+Stage 8 adds parallel wave execution and worktree isolation to the 14-step dispatch protocol.
 
-### --resume flag (in Step 1)
-`/orchestrate --resume specs/<name>.md` reads the spec file's Hydration Checkpoint and restores all orchestration state. Skips Steps 2-9 and jumps directly to the correct wave position.
+### --sequential flag (in Step 1)
+`/orchestrate --sequential` disables parallel dispatch for the entire run. Every wave executes tasks one at a time (Stage 7 behavior). Useful for debugging or when the codebase has fragile shared state.
 
-### Hydration Checkpoint (in Step 6 and throughout Step 10)
-After each significant state change, the orchestrator writes a `## Hydration Checkpoint` section to the spec file. The checkpoint contains a complete YAML snapshot: wave position, agent sessions (agentId per task), retry state, bounce history, routing flags, and timestamp.
+### Parallel Dispatch Decision (in Step 10)
+Before each wave, the orchestrator checks:
+- If SEQUENTIAL_MODE is true: sequential dispatch (one task at a time)
+- If the wave has 1 task: sequential dispatch (no benefit from parallelism)
+- If the wave has 2+ tasks: parallel dispatch (all builders launched concurrently)
 
-### Bounce-Back Detection (in Step 10, after builder and validator)
-After each builder completes, the orchestrator scans output for 5 blocking trigger types:
-- `conflicting-requirements` -- "conflicts with", "cannot satisfy both"
-- `architectural-decision` -- "multiple approaches possible", "design decision required"
-- `scope-discovery` -- "this also requires changes to", "more files affected than expected"
-- `external-dependency` -- "not found", "package not installed", "connection refused"
-- `decomposition-error` -- "cannot implement this in isolation", "task boundary issue"
+### Worktree Isolation (in Step 10)
+Each parallel builder is dispatched with `isolation: "worktree"`. The agent framework creates a temporary git worktree -- an isolated copy of the repository at a separate path. Builders write freely without file coordination. Worktrees are cleaned up after results are merged.
 
-After each validator completes with VERDICT: PASS, the orchestrator scans for 1 advisory trigger:
-- `design-concern` -- VERDICT: PASS + "technical debt", "recommend revisiting", etc.
+### Merge Protocol (in Step 10)
+After all parallel builders complete, results are merged into the main working tree in task-id order:
+1. Generate a diff from each worktree: `git -C <worktree-path> diff HEAD`
+2. Apply the diff to the main working tree: `git apply <diff>`
+3. If apply fails (conflict): record the task for sequential re-execution
 
-### Bounce-Back Resolution
-When a trigger is detected, the orchestrator:
-1. Updates task status to `bounced` in the spec file
-2. Writes a hydration checkpoint (preserves bounce state for cross-session resume)
-3. Presents bounded resolution options (2-4 choices) via AskUserQuestion
-4. Applies the user's decision
-5. Writes another checkpoint after resolution
+### Conflict Resolution (in Step 10)
+If any merge conflicts are detected:
+1. Emit `wave.conflict_detected` with the list of conflicting tasks
+2. Re-execute ONLY the conflicting tasks sequentially (standard builder dispatch)
+3. Emit `wave.conflict_resolved` after sequential re-execution completes
+
+### Parallel Validators (in Step 10)
+After all builders are merged and bounce-back is clear, validators are dispatched concurrently (same parallel protocol). Validators run on the merged state so they can verify cross-task consistency.
 
 ### New files in this stage:
-- `.claude/skills/orchestrator/references/hitl-protocol.md` -- bounce-back trigger catalog, status lifecycle, resolution matrix, resume protocol
-- `docs/patterns/hitl-protocol.md` -- HITL pattern: what, how, why
-- `docs/patterns/hydration-pattern.md` -- hydration pattern: checkpoint structure, cross-session resume
-- Updated `docs/patterns/spec-as-source-of-truth.md` -- hydration extension note
-- `prompts/stage-7/` -- test prompts for this stage
-- Updated `SKILL.md` to ~1010 lines (up from 945 in stage 6)
+- `docs/patterns/parallel-dispatch.md` -- parallel dispatch pattern: what, how, why
+- `docs/patterns/worktree-isolation.md` -- worktree isolation pattern: isolation mechanics, merge strategy
+- `prompts/stage-8/` -- test prompts for this stage
+- `specs/examples/stage-8-parallel-dispatch.md` -- example output for parallel wave execution
+- Updated `SKILL.md` to ~1200 lines (up from 1114 in stage 7)
+
+---
+
+## What This Stage Does NOT Do
+
+- **No browser-based validation** -- validators check code, not visual output (Stage 9)
+- **No visual regression testing** -- no screenshot comparison or visual diff
+- **No cross-browser testing** -- validators run in the agent environment only
+- **No live API cost data** -- token estimation uses fixed per-dispatch assumptions (future)
 
 ---
 
 ## Agent Conventions
 
-- **Builder** (sonnet): Writes code. Reads before writing. File boundaries are absolute. Reports changes. Output scanned for bounce-back triggers.
-- **Validator** (haiku): Read-only. Reports VERDICT: PASS or VERDICT: FAIL. Never modifies files. VERDICT: PASS scanned for design-concern trigger.
+- **Builder** (sonnet): Writes code. Reads before writing. File boundaries are absolute. Reports changes. Output scanned for bounce-back triggers. In parallel mode, runs in an isolated worktree.
+- **Validator** (haiku): Read-only. Reports VERDICT: PASS or VERDICT: FAIL. Never modifies files. VERDICT: PASS scanned for design-concern trigger. In parallel mode, runs on the merged state.
 - **Research Builder** (sonnet): Researches and synthesizes from web sources. Has WebSearch and WebFetch. Writes markdown research reports, not code.
 - **Research Validator** (haiku): Read-only. Spot-checks citations via WebFetch. Reports VERDICT: PASS or VERDICT: FAIL.
-- **Orchestrator** (opus): Never writes code. Detects bounce triggers, pauses for human input, writes hydration checkpoints, resumes from checkpoint on --resume.
+- **Orchestrator** (opus): Never writes code. Decides parallel vs. sequential dispatch per wave. Merges worktree results. Detects conflicts and falls back to sequential. Detects bounce triggers, pauses for human input, writes hydration checkpoints, resumes from checkpoint on --resume.
 - **Codex CLI** (external): Alternative builder for hard tasks. Invoked via `codex exec --full-auto`. Falls back to standard builder on failure.
 
 ---
@@ -138,7 +144,7 @@ Team profiles live in `.claude/skills/orchestrator/teams/`. The `--team` flag se
 | `engineering` | `teams/engineering.md` | `builder` | `validator` | Code tasks (default) |
 | `research` | `teams/research.md` | `research-builder` | `research-validator` | Web research and analysis |
 
-Difficulty routing, spec hardening, HITL bounce-back, and hydration apply to all teams.
+Difficulty routing, spec hardening, HITL bounce-back, hydration, and parallel dispatch apply to all teams.
 
 ---
 
@@ -168,26 +174,18 @@ bun test                 # Run all tests
 
 ## Branch Strategy
 
-**Cumulative chain:** each stage branches from the previous stage. Main is the lobby -- it holds learning tools but no orchestrator. This is the final stage in the current module series.
+**Cumulative chain:** each stage branches from the previous stage. Main is the lobby -- it holds learning tools but no orchestrator.
 
 ```bash
 # Diff commands for readers
-git diff orchestration/6-codex..orchestration/7-hitl    # What stage 7 adds (HITL + hydration)
-git diff orchestration/5-plugin..orchestration/6-codex  # What stage 6 adds (difficulty routing, spec hardening)
-git diff orchestration/4-hop..orchestration/5-plugin    # What stage 5 adds (plugin extraction docs)
-git diff orchestration/3-full..orchestration/4-hop      # What stage 4 adds (team switching)
+git diff orchestration/7-hitl..orchestration/8-parallel    # What stage 8 adds (parallel + worktrees)
+git diff orchestration/6-codex..orchestration/7-hitl       # What stage 7 adds (HITL + hydration)
+git diff orchestration/5-plugin..orchestration/6-codex     # What stage 6 adds (difficulty routing, spec hardening)
+git diff orchestration/4-hop..orchestration/5-plugin       # What stage 5 adds (plugin extraction docs)
+git diff orchestration/3-full..orchestration/4-hop         # What stage 4 adds (team switching)
 ```
 
 See `specs/master-plan.md` "Branch Strategy" for full rules.
-
----
-
-## What This Stage Does NOT Do
-
-This is Stage 7 (HITL Bounce-Back + Persistence). The following capabilities are intentionally absent -- they are added in later stages:
-
-- **No parallel wave execution** -- tasks within a wave run sequentially, one at a time (Stage 8)
-- **No live API cost data** -- token estimation uses fixed per-dispatch assumptions (future)
 
 ---
 
@@ -207,24 +205,33 @@ This is Stage 7 (HITL Bounce-Back + Persistence). The following capabilities are
 
 ---
 
-## Cross-Branch Access
+## Return to Main
 
 To return to the lobby: `git checkout main`
 
 On main you have access to `/learn`, `/dojo`, and `/advisor` for pattern learning.
 
+---
+
+## Cross-Branch Reading
+
 To read files from any branch without checking out:
+
 ```bash
-# Read pattern docs from main while on this branch
-git show main:docs/patterns/hitl-protocol.md
-git show main:docs/patterns/hydration-pattern.md
+# Read the new pattern docs introduced in this stage
+git show main:docs/patterns/parallel-dispatch.md
+git show main:docs/patterns/worktree-isolation.md
+git show main:docs/patterns/wave-computation.md
 
-# See what stage 7 adds over stage 6
-git diff orchestration/6-codex..orchestration/7-hitl --stat
+# See what stage 8 adds over stage 7
+git diff orchestration/7-hitl..orchestration/8-parallel --stat
 
-# Read the HITL reference from this stage
+# Read the full SKILL.md from this stage
+git show orchestration/8-parallel:.claude/skills/orchestrator/SKILL.md
+
+# Compare the SKILL.md between stages
+git diff orchestration/7-hitl..orchestration/8-parallel -- .claude/skills/orchestrator/SKILL.md
+
+# Read the HITL reference (introduced in stage 7)
 git show orchestration/7-hitl:.claude/skills/orchestrator/references/hitl-protocol.md
-
-# Compare the full SKILL.md between stages
-git diff orchestration/6-codex..orchestration/7-hitl -- .claude/skills/orchestrator/SKILL.md
 ```

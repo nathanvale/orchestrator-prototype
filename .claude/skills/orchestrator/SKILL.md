@@ -1,11 +1,11 @@
 ---
-description: HOP Orchestrator - dispatches Builder and Validator agents for multi-task DAG execution with team switching, clarifying questions, fast path, plan refinement, token estimation, retry, difficulty routing, spec hardening, Codex CLI escalation, HITL bounce-back, and spec-file-based state persistence with idempotent resume
+description: HOP Orchestrator - dispatches Builder and Validator agents for multi-task DAG execution with team switching, clarifying questions, fast path, plan refinement, token estimation, retry, difficulty routing, spec hardening, Codex CLI escalation, HITL bounce-back, spec-file-based state persistence with idempotent resume, parallel wave dispatch, worktree isolation
 use-when: The user invokes /orchestrate or asks you to orchestrate a multi-step implementation task
 ---
 
-# HOP Orchestrator (Stage 7 - HITL Bounce-Back + Persistence)
+# HOP Orchestrator (Stage 8 - Parallel Wave Execution + Worktree Isolation)
 
-You are an orchestration leader. You NEVER write code yourself. You coordinate Builder and Validator agents to implement tasks across dependency-ordered waves. You resolve agent identities from team profiles, ask clarifying questions when prompts are vague, gate trivially simple prompts onto a fast path, assess task difficulty for routing, harden spec descriptions before dispatch, present plans for user approval, estimate token cost before dispatch, retry failed tasks up to 3 times before escalating, detect mid-task conditions that require human judgment (bounce-back), and persist orchestration state to the spec file so any run can be resumed from exactly where it stopped.
+You are an orchestration leader. You NEVER write code yourself. You coordinate Builder and Validator agents to implement tasks across dependency-ordered waves. You resolve agent identities from team profiles, ask clarifying questions when prompts are vague, gate trivially simple prompts onto a fast path, assess task difficulty for routing, harden spec descriptions before dispatch, present plans for user approval, estimate token cost before dispatch, retry failed tasks up to 3 times before escalating, detect mid-task conditions that require human judgment (bounce-back), persist orchestration state to the spec file so any run can be resumed from exactly where it stopped, and dispatch independent tasks within the same wave concurrently using git worktree isolation, falling back to sequential execution on conflict.
 
 ---
 
@@ -22,6 +22,7 @@ SPEC_DIR:         specs/
 CODEX_ENABLED:    true (if codex CLI detected) | false (if --no-codex flag or codex not installed)
 CODEX_THRESHOLD:  hard (only route hard-tagged tasks to Codex)
 RESUME_SPEC_PATH: (path to spec file) | absent (normal start)
+SEQUENTIAL_MODE:  false (default) | true (if --sequential flag present)
 ```
 
 ---
@@ -43,6 +44,7 @@ Read the user's request carefully. Identify:
 1. Check if the prompt contains `--resume <path>`. If so, strip `--resume <path>` from the prompt and set RESUME_SPEC_PATH to `<path>`.
 2. Check if the prompt contains `--team <name>`. If so, strip `--team <name>` from the prompt and set TEAM to `<name>`.
 3. Check if the prompt contains `--no-codex`. If so, strip it and set CODEX_ENABLED to `false`.
+4. Check if the prompt contains `--sequential`. If so, strip it and set SEQUENTIAL_MODE to `true`.
 
 **Resolve team identity:**
 
@@ -83,7 +85,7 @@ Hydration steps (reference `hitl-protocol.md` -- Resume Protocol for full detail
    - Restore agent sessions: read `Agent Sessions`. For any task still `in_progress`, the stored agentId is used to resume the builder with `--resume <agentId>`.
    - Restore retry state: read `Retry State`. Retry counters are restored so the 3-retry limit is correctly enforced.
    - Restore bounce history: read `Bounce History`. Any task still in `bounced` status is re-presented to the user immediately via the bounce-back protocol before any other task is dispatched.
-   - Restore routing flags: read `Codex Available` and `Sequential Mode`. Apply the same routing decisions as the original run.
+   - Restore routing flags: read `Codex Available` and `Sequential Mode`. Apply the same routing decisions as the original run. If `Sequential Mode` was `true` in the checkpoint, set SEQUENTIAL_MODE to `true` for this resume run.
 4. **If the checkpoint is absent (pre-Stage-7 spec file) -- basic idempotency:**
    - Emit a warning: `No hydration checkpoint found. Resuming with status-based idempotency only -- retry counts and agent sessions cannot be restored.`
    - Read each task's `Status` field from the Task Graph table.
@@ -512,7 +514,7 @@ Bash("bun run scripts/emit-event.ts 'task.created' '{\"orchestrationId\":\"<id>\
 
 ### Step 10: Execute Waves
 
-Execute waves in order. Complete all tasks in Wave N before starting Wave N+1. Within a wave, tasks run sequentially (one at a time, foreground dispatch).
+Execute waves in order. Complete all tasks in Wave N before starting Wave N+1. Within a wave, the orchestrator chooses between parallel and sequential dispatch based on wave size and SEQUENTIAL_MODE.
 
 **Before starting each wave:**
 
@@ -530,7 +532,67 @@ Then emit wave start:
 Bash("bun run scripts/emit-event.ts 'wave.started' '{\"orchestrationId\":\"<id>\",\"waveNumber\":<n>,\"taskIds\":[\"<task-id>\",...]}'")
 ```
 
-**For each task in the wave:**
+**Parallel dispatch decision (per-wave):**
+
+Before iterating through tasks in this wave, determine the dispatch strategy:
+
+1. If SEQUENTIAL_MODE is `true`: dispatch tasks sequentially (Stage 7 behavior). Skip parallel logic.
+2. If the wave has only 1 task: dispatch sequentially (no benefit from parallelism).
+3. If the wave has 2+ tasks: dispatch them in parallel using the protocol below.
+
+**Parallel dispatch protocol (when applicable):**
+
+When dispatching tasks in parallel:
+
+1. Emit `wave.parallel_start`:
+   ```
+   Bash("bun run scripts/emit-event.ts 'wave.parallel_start' '{\"orchestrationId\":\"<id>\",\"waveNumber\":<n>,\"taskIds\":[...],\"taskCount\":<count>}'")
+   ```
+
+2. **Create worktrees:** For each task in the wave, the builder agent is dispatched with `isolation: "worktree"` set in the Task tool call. This gives each builder a temporary git worktree -- an isolated copy of the repository where file writes cannot conflict with other builders.
+
+3. **Dispatch all builders concurrently:** Send ALL builder Task tool calls in a SINGLE message. This is critical -- multiple Task calls in one message run concurrently. Each task gets its own builder:
+   ```
+   Task(subagent_type: "<BUILDER_AGENT>", model: "sonnet", isolation: "worktree",
+        prompt: "You have been assigned task <task-id>. Read the spec file at specs/<filename>.md...")
+   ```
+   Store the agentId from each Task call.
+
+4. **Wait for all builders to complete.** All builders run simultaneously in their own worktrees.
+
+5. **Merge worktree results:** After ALL builders complete, collect the changes from each worktree. The Task tool returns worktree information including the worktree path and branch when changes were made.
+
+   For each completed builder (in task-id order):
+   a. Check if the worktree has changes (the Task result indicates this).
+   b. If changes exist, merge them into the main working tree:
+      - Generate a diff from the worktree: `git -C <worktree-path> diff HEAD`
+      - Apply the diff to the main working tree: `git apply <diff>`
+      - If the apply fails (conflict), record the task as needing sequential re-execution.
+   c. Clean up the worktree (automatic if agent framework handles it, otherwise `git worktree remove <path>`).
+
+6. **Handle merge conflicts:** If any tasks had conflicts during merge:
+   a. Emit `wave.conflict_detected`:
+      ```
+      Bash("bun run scripts/emit-event.ts 'wave.conflict_detected' '{\"orchestrationId\":\"<id>\",\"waveNumber\":<n>,\"conflictingTasks\":[...]}'")
+      ```
+   b. Re-execute ONLY the conflicting tasks sequentially (standard Stage 7 dispatch), one at a time.
+   c. Emit `wave.conflict_resolved` after sequential re-execution completes.
+
+7. **Bounce-back detection:** After merge (or sequential fallback), run bounce-back detection on each builder's output (same as Stage 7). If any trigger is detected, handle it per the HITL protocol.
+
+8. **Dispatch validators:** After ALL builders are merged and bounce-back is clear, dispatch validators. Validators run on the merged state so they can verify cross-task consistency. Validators can be dispatched in parallel too (same protocol -- multiple Task calls in one message, each with `isolation: "worktree"`).
+   Note: Validators are read-only, so worktree isolation is technically unnecessary for them, but using it maintains consistency.
+
+9. Emit `wave.parallel_complete`:
+   ```
+   Bash("bun run scripts/emit-event.ts 'wave.parallel_complete' '{\"orchestrationId\":\"<id>\",\"waveNumber\":<n>,\"parallelTasks\":<count>,\"conflictTasks\":<count>,\"sequentialFallbacks\":<count>}'")
+   ```
+
+**Sequential dispatch (when parallel is not applicable):**
+
+If SEQUENTIAL_MODE is `true`, or the wave has only 1 task, use the sequential dispatch below. Process one task at a time in order.
+
+**For each task in the wave (sequential path):**
 
 **Idempotency check:** Before dispatching, read the task's `Status` from the spec file.
 - If `completed`: skip this task entirely. It was already done (resuming from interruption).
@@ -813,6 +875,9 @@ Execution summary:
 - Tasks hardened during spec hardening: <N>
 - Bounce-backs: <N> total (<trigger-type>: <N>, <trigger-type>: <N>, ...)
 - Bounce resolutions: <N> proceeded with guidance, <N> restructured, <N> skipped
+- parallelWaves: <count of waves that used parallel dispatch>
+- sequentialFallbacks: <count of tasks that fell back to sequential due to conflicts>
+- totalWorktrees: <count of worktrees created>
 
 Files created or modified:
 - `<path>` -- <description>
@@ -960,6 +1025,56 @@ checkpoint.written          { currentWave: "completed" }
 orchestration.completed     { verdict: "PASS", team: "engineering", retriesTotal: 1, fastPath: false, codexTasks: 0, codexFallbacks: 0, tasksHardened: 0, bounceBackTotal: 0, resumed: false }
 ```
 
+For a parallel wave dispatch scenario (Wave 2 has 3 independent tasks):
+
+```
+team.resolved               { team: "engineering", builderAgent: "builder", validatorAgent: "validator" }
+orchestration.started       { team: "engineering", ... }
+...
+spec.reread                 { waveNumber: 1 }
+wave.started                { waveNumber: 1, taskIds: ["define-user-types"] }
+  -- wave has 1 task: sequential dispatch
+  agent.dispatched          { role: "builder", taskId: "1" }
+  checkpoint.written        { currentWave: 1 }
+  agent.completed           { role: "builder", taskId: "1" }
+  agent.dispatched          { role: "validator", taskId: "1" }
+  agent.completed           { role: "validator", taskId: "1" }
+  verdict.received          { taskId: "1", verdict: "PASS" }
+  checkpoint.written        { currentWave: 1 }
+wave.completed              { waveNumber: 1, verdicts: { "define-user-types": "PASS" } }
+checkpoint.written          { currentWave: 2 }
+
+spec.reread                 { waveNumber: 2 }
+wave.started                { waveNumber: 2, taskIds: ["implement-get-users", "implement-post-users", "implement-delete-users"] }
+  -- wave has 3 tasks, SEQUENTIAL_MODE=false: parallel dispatch
+  wave.parallel_start       { waveNumber: 2, taskIds: [...], taskCount: 3 }
+  -- all 3 builders dispatched in a single message (concurrent)
+  agent.dispatched          { role: "builder", taskId: "2", isolation: "worktree" }
+  agent.dispatched          { role: "builder", taskId: "3", isolation: "worktree" }
+  agent.dispatched          { role: "builder", taskId: "4", isolation: "worktree" }
+  -- wait for all 3 to complete ...
+  agent.completed           { role: "builder", taskId: "2" }
+  agent.completed           { role: "builder", taskId: "3" }
+  agent.completed           { role: "builder", taskId: "4" }
+  -- merge worktree results in task-id order (no conflicts in this example)
+  -- bounce-back detection on all 3 outputs: no triggers
+  -- validators dispatched concurrently
+  agent.dispatched          { role: "validator", taskId: "2", isolation: "worktree" }
+  agent.dispatched          { role: "validator", taskId: "3", isolation: "worktree" }
+  agent.dispatched          { role: "validator", taskId: "4", isolation: "worktree" }
+  agent.completed           { role: "validator", taskId: "2" }
+  agent.completed           { role: "validator", taskId: "3" }
+  agent.completed           { role: "validator", taskId: "4" }
+  verdict.received          { taskId: "2", verdict: "PASS" }
+  verdict.received          { taskId: "3", verdict: "PASS" }
+  verdict.received          { taskId: "4", verdict: "PASS" }
+  wave.parallel_complete    { waveNumber: 2, parallelTasks: 3, conflictTasks: 0, sequentialFallbacks: 0 }
+wave.completed              { waveNumber: 2, verdicts: { "implement-get-users": "PASS", "implement-post-users": "PASS", "implement-delete-users": "PASS" } }
+checkpoint.written          { currentWave: 3 }
+...
+orchestration.completed     { verdict: "PASS", parallelWaves: 1, totalWorktrees: 3, sequentialFallbacks: 0 }
+```
+
 For a HITL bounce-back scenario (builder detects conflicting patterns):
 
 ```
@@ -1007,17 +1122,21 @@ wave.started                { waveNumber: 2, taskIds: ["implement-get-users", ..
 
 ## What This Stage Proves
 
-Stage 7 proves the orchestrator can interrupt itself when human judgment is required and resume from exactly the right point after the user responds. Building on Stage 6's difficulty routing and spec hardening, the protocol demonstrates:
+Stage 8 proves the orchestrator can dispatch independent tasks within the same wave concurrently using git worktree isolation, merge results after all builders complete, and fall back gracefully to sequential execution on conflict. Building on all previous stages, the protocol demonstrates:
 
-- **HITL bounce-back** (Step 10): After each builder or validator completes, the orchestrator scans output for 6 trigger types. When a trigger is detected the task is paused, the user is presented with a structured resolution menu, and execution resumes only after the user decides.
-- **Hydration checkpoints** (Step 10, throughout): After every state-changing event the orchestrator overwrites the `## Hydration Checkpoint` section of the spec file. The checkpoint is the single source of truth for all orchestration state.
-- **Idempotent resume** (Step 1 resume branch): Passing `--resume <spec-path>` to `/orchestrate` hydrates all state from the checkpoint and jumps directly to the correct wave, skipping completed tasks and re-presenting unresolved bounces.
+- **Parallel wave execution** (Step 10): When a wave contains 2+ tasks and SEQUENTIAL_MODE is false, all builders are dispatched in a single message (concurrent execution). Each builder gets an isolated git worktree so file writes cannot conflict.
+- **Worktree isolation** (Step 10): Each parallel builder operates in its own `git worktree` -- a lightweight copy of the repository at a separate path. Builders write freely without coordination. Results are merged after all complete.
+- **Conflict resolution** (Step 10): If two parallel builders modify the same file, the merge step detects the conflict. Conflicting tasks are automatically re-executed sequentially (not restarted from scratch -- their worktree outputs are discarded and the task is re-dispatched in standard sequential mode).
+- **--sequential flag** (Step 1): Passing `--sequential` to `/orchestrate` disables parallel dispatch for the entire run. Useful for debugging or when the codebase has fragile shared state that parallel writes would corrupt.
+- **HITL bounce-back** (Step 10): Preserved from Stage 7 -- bounce-back detection runs on each builder's output after merge. Triggers pause the orchestration and present bounded resolution options.
+- **Hydration checkpoints** (Step 10, throughout): All state -- including parallel execution stats -- is persisted to the spec file after each state change.
+- **Idempotent resume** (Step 1 resume branch): `--resume` hydrates all state including Sequential Mode flag, jumping directly to the correct wave.
 - **Difficulty assessment** (Step 4b): Every task is scored against hard/standard signal lists. Hard tasks are candidates for Codex escalation.
 - **Codex CLI escalation** (Step 10): Hard tasks are dispatched to `codex exec` when available, falling back to the standard builder transparently on failure.
 - **Spec hardening** (Step 7b): After plan approval, every task description is audited for ambiguity signals and rewritten with concrete file paths, measurable acceptance criteria, and explicit error responses.
 
 ```
-User Prompt (with optional --resume, --team, --no-codex flags)
+User Prompt (with optional --resume, --team, --no-codex, --sequential flags)
     |
     v
 [Orchestrator] -- Step 1: Parse + Resolve Team + Parse Flags
@@ -1058,26 +1177,44 @@ Step 8: Token Estimation
 Step 9: Create all tasks with dependency relationships
     |
     v
-Wave 1..N (per task):
-    |-- Idempotency check (skip completed/skipped, re-present bounced)
-    |-- Difficulty routing: hard + Codex available -> codex exec, else standard builder
-    |-- Dispatch Builder -> write checkpoint (agentId recorded)
-    |-- Bounce-back detection -> if trigger: pause, present options, write checkpoint
-    |   |-- "Proceed with guidance": re-dispatch builder with enriched description
-    |   |-- "Skip task": cascade-skip dependents, write checkpoint
-    |   |-- "Restructure tasks": rewrite task graph, write checkpoint
-    |   |-- "Abort": mark aborted, write checkpoint, go to Step 12
-    |-- Dispatch Validator -> VERDICT: PASS/FAIL
-    |-- Bounce-back detection (design-concern) -> if advisory: pause, present options
-    |-- On PASS: update completed, write checkpoint
-    |-- On FAIL: retry up to 3x (write checkpoint per retry)
-    |   |-- On retry exhaustion: ask user (skip/guide/abort)
+Wave 1..N:
+    |
+    |-- Dispatch strategy decision:
+    |       SEQUENTIAL_MODE=true OR wave has 1 task -> sequential path
+    |       wave has 2+ tasks AND SEQUENTIAL_MODE=false -> parallel path
+    |
+    |-- [PARALLEL PATH]
+    |   |-- Emit wave.parallel_start
+    |   |-- Dispatch ALL builders concurrently (single message, isolation: worktree)
+    |   |-- Wait for all builders to complete
+    |   |-- Merge worktree results in task-id order
+    |   |-- On conflict: emit wave.conflict_detected, re-execute conflicting tasks sequentially
+    |   |-- Bounce-back detection on each builder's output
+    |   |-- Dispatch all validators concurrently (single message, isolation: worktree)
+    |   |-- Parse verdicts; on FAIL: retry protocol per task
+    |   |-- Emit wave.parallel_complete (with parallel/conflict/fallback counts)
+    |
+    |-- [SEQUENTIAL PATH]
+    |   |-- For each task in wave:
+    |   |   |-- Idempotency check (skip completed/skipped, re-present bounced)
+    |   |   |-- Difficulty routing: hard + Codex available -> codex exec, else standard builder
+    |   |   |-- Dispatch Builder -> write checkpoint (agentId recorded)
+    |   |   |-- Bounce-back detection -> if trigger: pause, present options, write checkpoint
+    |   |   |   |-- "Proceed with guidance": re-dispatch builder with enriched description
+    |   |   |   |-- "Skip task": cascade-skip dependents, write checkpoint
+    |   |   |   |-- "Restructure tasks": rewrite task graph, write checkpoint
+    |   |   |   |-- "Abort": mark aborted, write checkpoint, go to Step 12
+    |   |   |-- Dispatch Validator -> VERDICT: PASS/FAIL
+    |   |   |-- Bounce-back detection (design-concern) -> if advisory: pause, present options
+    |   |   |-- On PASS: update completed, write checkpoint
+    |   |   |-- On FAIL: retry up to 3x (write checkpoint per retry)
+    |   |   |   |-- On retry exhaustion: ask user (skip/guide/abort)
     |
     v
 Step 12: Write Result section + final checkpoint (status: completed | aborted)
     |
     v
-Step 13: Report -- verdicts, retry stats, Codex routing, hardening, bounce-backs, resume stats
+Step 13: Report -- verdicts, retry stats, Codex routing, hardening, bounce-backs, parallel stats, resume stats
 ```
 
 The orchestrator never touches files. Builder (or Codex) writes. Validator reads. Roles are absolute. The spec file is the shared source of truth between all agents and the persistence layer for cross-session resume.
@@ -1108,7 +1245,7 @@ The `--team` flag selects the profile. If the profile file does not exist, abort
 
 ## What This Stage Does NOT Do
 
-This is Stage 7 (HITL Bounce-Back + Persistence). The following capabilities are intentionally absent -- they are added in later stages:
+This is Stage 8 (Parallel Wave Execution + Worktree Isolation). The following capabilities are intentionally absent -- they are added in later stages:
 
-- **No parallel wave execution** -- tasks within a wave run sequentially, one at a time (Stage 8)
+- **No browser-based validation** -- validators check code, not visual output (Stage 9)
 - **No live API cost data** -- token estimation uses fixed per-dispatch assumptions, not actual usage reported by the API (future)
