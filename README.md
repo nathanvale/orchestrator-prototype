@@ -35,4 +35,3 @@ Use `/dojo` on main to learn patterns, then checkout a stage to see proof:
 ```
 
 Use `/learn` to browse all modules and stages.
-See `specs/master-plan.md` for the full curriculum.
