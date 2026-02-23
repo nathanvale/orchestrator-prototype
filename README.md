@@ -14,6 +14,8 @@ orchestrator at that complexity level.
 | 5 | [`orchestration/5-plugin`](../../tree/orchestration/5-plugin) | Plugin extraction | [Diff](../../compare/orchestration/4-hop...orchestration/5-plugin) |
 | 6 | [`orchestration/6-codex`](../../tree/orchestration/6-codex) | Codex routing, spec hardening | [Diff](../../compare/orchestration/5-plugin...orchestration/6-codex) |
 | 7 | [`orchestration/7-hitl`](../../tree/orchestration/7-hitl) | HITL bounce-back, persistence | [Diff](../../compare/orchestration/6-codex...orchestration/7-hitl) |
+| 8 | [`orchestration/8-parallel`](../../tree/orchestration/8-parallel) | Parallel dispatch, worktree isolation | [Diff](../../compare/orchestration/7-hitl...orchestration/8-parallel) |
+| 9 | [`orchestration/9-browser`](../../tree/orchestration/9-browser) | Browser validation, Ralph Wiggum loop | [Diff](../../compare/orchestration/8-parallel...orchestration/9-browser) |
 
 ## Quick Start
 
