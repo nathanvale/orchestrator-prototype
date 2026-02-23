@@ -24,7 +24,7 @@ The orchestrator itself does NOT live on main. To run `/orchestrate`, checkout a
 
 ```bash
 git checkout orchestration/1-dispatch   # Simplest: single-task dispatch loop
-git checkout orchestration/7-hitl       # Latest: HITL bounce-back + persistence
+git checkout orchestration/9-browser    # Latest: Browser validation + Ralph Wiggum loop
 ```
 
 **See:** `specs/master-plan.md` for the full roadmap, `docs/patterns/` for pattern explanations.
@@ -134,6 +134,20 @@ Planned:
 ```
 
 The dojo displays anchors as navigation hints. The learner manually checks out the branch to see the proof code.
+
+### Source Anchor Resolution
+
+Agents and humans resolve source anchors to view proof code on module branches:
+
+```bash
+# View a specific anchor range
+git show orchestration/4-hop:.claude/skills/orchestrator/SKILL.md | sed -n '33,60p'
+
+# View an entire reference file
+git show orchestration/7-hitl:.claude/skills/orchestrator/references/hitl-protocol.md
+```
+
+Source anchors use the format `<branch>:<file-path>:L<start>-L<end>`. The `sed -n` command extracts the line range. For anchors without line numbers, `git show` displays the entire file.
 
 ---
 
