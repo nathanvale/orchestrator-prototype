@@ -405,5 +405,5 @@ Built with [bun-typescript-starter](https://github.com/nathanvale/bun-typescript
 | | |
 |---|---|
 | **Previous** | [Stage 6: Codex Escalation](../../tree/orchestration/6-codex) |
-| **Next** | Stage 8: Parallel Execution (planned) |
+| **Next** | [Stage 8: Parallel Execution](../../tree/orchestration/8-parallel) |
 | **All Modules** | [Main (Lobby)](../../tree/main) |
