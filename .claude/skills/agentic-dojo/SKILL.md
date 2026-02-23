@@ -1,14 +1,18 @@
 ---
 name: dojo
 description: >-
-  Pattern knowledge for agentic orchestration. Teaches dispatch loops,
-  DAGs, wave computation, retry, HOP, builder-validator, iterative
-  refinement, fast path, spec files, idempotency, topological sort,
-  task decomposition, and agent coordination through two modes.
+  Pattern knowledge for agentic orchestration. Teaches all 19 patterns
+  across 9 stages: dispatch loops, DAGs, wave computation, retry, HOP,
+  builder-validator, iterative refinement, fast path, spec files,
+  idempotency, topological sort, task decomposition, team profiles,
+  plugin architecture, difficulty routing, spec hardening, HITL,
+  hydration, parallel dispatch, worktree isolation, browser validation,
+  and the Ralph Wiggum visual retry loop.
   Use when: the user asks about agentic patterns, orchestration concepts,
   dispatch loops, DAG execution, wave computation, retry logic, higher-order
-  prompts, builder-validator, spec files, fast path, or iterative
-  refinement. Also use when an agent queries for pattern guidance.
+  prompts, builder-validator, spec files, fast path, iterative refinement,
+  parallel execution, browser validation, or visual retry loops.
+  Also use when an agent queries for pattern guidance.
 argument-hint: "e.g. 'explain wave computation' or 'lookup retry'"
 allowed-tools: Read, Glob, Grep
 hooks:
@@ -58,6 +62,8 @@ Patterns:
   retry-with-resume    fast-path-gate      iterative-refinement
   team-profiles        plugin-architecture difficulty-routing
   spec-hardening       hitl-protocol       hydration-pattern
+  parallel-dispatch    worktree-isolation  browser-validation
+  ralph-wiggum-loop
 
 Examples:
   /dojo explain wave computation    (short forms: wave, dag, spec, hop...)
@@ -110,6 +116,10 @@ conversation context (agent invocations) default to Reference.
 | harden, hardening, ambiguity | spec-hardening |
 | hitl, bounce, bounce-back, human-loop | hitl-protocol |
 | hydrat, checkpoint, persist, cross-session | hydration-pattern |
+| parallel, concurrent, fan-out | parallel-dispatch |
+| worktree, isolation, worktrees | worktree-isolation |
+| browser, screenshot, visual, agent-browser | browser-validation |
+| ralph, wiggum, visual-retry, visual-loop | ralph-wiggum-loop |
 
 **2. Keyword table** -- if no alias matched.
 
@@ -130,6 +140,10 @@ conversation context (agent invocations) default to Reference.
 | harden, hardening, ambiguous, concrete, acceptance criteria | Spec Hardening | .claude/references/patterns/pattern-spec-hardening.md |
 | HITL, human-in-the-loop, bounce-back, pause, mid-execution | HITL Protocol | .claude/references/patterns/pattern-hitl-protocol.md |
 | hydration, checkpoint, cross-session, resume state, persist state | Hydration Pattern | .claude/references/patterns/pattern-hydration-pattern.md |
+| parallel dispatch, concurrent, fan-out, wave parallelism, sequential flag | Parallel Dispatch | .claude/references/patterns/pattern-parallel-dispatch.md |
+| worktree, isolation, git worktree, diff-and-apply, merge conflict | Worktree Isolation | .claude/references/patterns/pattern-worktree-isolation.md |
+| browser, screenshot, visual validation, agent-browser, dev server, UI validation | Browser Validation | .claude/references/patterns/pattern-browser-validation.md |
+| ralph wiggum, visual retry, screenshot loop, visual fix cycle, no-browser | Ralph Wiggum Loop | .claude/references/patterns/pattern-ralph-wiggum-loop.md |
 | (no pattern match) | -- | Show pattern index and ask user to clarify |
 
 **3. Conversation fallback** -- if no pattern detected from $ARGUMENTS,
@@ -153,7 +167,6 @@ no pattern matches.
 
 - Never writes code, creates files, or modifies the codebase
 - Never executes scripts or runs commands
-- Does not cover Parallel Dispatch (Stage 8) -- distinct from wave-level parallelism; not yet documented
 - Does not replace the orchestrator skill -- this teaches patterns, that executes them
 - Does not compare patterns side-by-side (v2 consideration)
 
