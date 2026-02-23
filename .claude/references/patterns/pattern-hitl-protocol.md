@@ -110,4 +110,6 @@ The key distinction between bounce-back triggers and normal retry failure: a ret
 ## Source Anchors
 
 Stage 7 (concept introduction and proof):
-- Planned -- orchestration/7-hitl (not yet created)
+- `orchestration/7-hitl:.claude/skills/orchestrator/SKILL.md:L597-L644` -- Bounce-back detection, trigger catalog, user presentation, resolution options (proceed/skip/restructure/abort)
+- `orchestration/7-hitl:.claude/skills/orchestrator/SKILL.md:L72-L95` -- Resume branch: hydration algorithm, bounce history restore, re-presentation of pending bounce-backs
+- `orchestration/7-hitl:.claude/skills/orchestrator/references/hitl-protocol.md` -- Full trigger catalog, severity levels, resolution option matrix per trigger type

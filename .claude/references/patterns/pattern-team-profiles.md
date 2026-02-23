@@ -104,4 +104,6 @@ Research team agents (`research-builder`, `research-validator`) require WebSearc
 ## Source Anchors
 
 Stage 4 (concept introduction and proof):
-- Planned -- orchestration/4-hop (not yet created)
+- `orchestration/4-hop:.claude/skills/orchestrator/SKILL.md:L26-L57` -- --team flag parsing, team resolution algorithm, BUILDER_AGENT and VALIDATOR_AGENT set from profile
+- `orchestration/4-hop:.claude/skills/orchestrator/teams/engineering.md` -- Engineering team profile (default team)
+- `orchestration/4-hop:.claude/skills/orchestrator/teams/research.md` -- Research team profile (research-builder, research-validator)

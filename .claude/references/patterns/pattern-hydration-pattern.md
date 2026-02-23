@@ -124,4 +124,7 @@ flags:
 ## Source Anchors
 
 Stage 7 (concept introduction and proof):
-- Planned -- orchestration/7-hitl (not yet created)
+- `orchestration/7-hitl:.claude/skills/orchestrator/SKILL.md:L361-L395` -- Hydration Checkpoint section format in spec file, initial checkpoint write after spec creation
+- `orchestration/7-hitl:.claude/skills/orchestrator/SKILL.md:L43-L95` -- --resume flag parsing, hydration algorithm steps, full/basic hydration paths, orchestration.resumed event
+- `orchestration/7-hitl:.claude/skills/orchestrator/SKILL.md:L583-L595` -- Checkpoint write after builder dispatch (records agentId in Agent Sessions)
+- `orchestration/7-hitl:.claude/skills/orchestrator/references/hitl-protocol.md` -- Resume Protocol: checkpoint schema, hydration steps, bounce history restore

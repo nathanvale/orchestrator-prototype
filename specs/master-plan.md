@@ -116,25 +116,25 @@ A Higher-Order Prompt -- a prompt that takes another prompt as a parameter (like
 
 | Stage | Old Branch (`stage/*`) | New Branch (`orchestration/*`) | Status |
 |-------|----------------------|-------------------------------|--------|
-| 1 | `stage/1-dispatch` (frozen) | `orchestration/1-dispatch` | Needs rebuild (rename + add /lobby) |
-| 2 | `stage/2-dag` (frozen) | `orchestration/2-dag` | Needs rebuild (rename + add /lobby) |
-| 3 | `stage/3-full` (frozen) | `orchestration/3-full` | Needs rebuild (rename + add /lobby) |
-| 4 | on `chore/tune-product-direction` | `orchestration/4-hop` | Needs rebuild from orchestration/3-full |
-| 5 | on `chore/tune-product-direction` | `orchestration/5-plugin` | Needs rebuild from orchestration/4-hop |
-| 6 | on `chore/tune-product-direction` | `orchestration/6-codex` | Needs rebuild from orchestration/5-plugin |
-| 7 | on `chore/tune-product-direction` | `orchestration/7-hitl` | Needs rebuild from orchestration/6-codex |
+| 1 | `stage/1-dispatch` (frozen) | `orchestration/1-dispatch` | Complete -- pushed, immutable |
+| 2 | `stage/2-dag` (frozen) | `orchestration/2-dag` | Complete -- pushed, immutable |
+| 3 | `stage/3-full` (frozen) | `orchestration/3-full` | Complete -- pushed, immutable |
+| 4 | on `chore/tune-product-direction` (reference only) | `orchestration/4-hop` | Complete -- pushed, immutable |
+| 5 | on `chore/tune-product-direction` (reference only) | `orchestration/5-plugin` | Complete -- pushed, immutable |
+| 6 | on `chore/tune-product-direction` (reference only) | `orchestration/6-codex` | Complete -- pushed, immutable |
+| 7 | on `chore/tune-product-direction` (reference only) | `orchestration/7-hitl` | Complete -- pushed, immutable |
 | 8-9 | not yet created | `orchestration/8-parallel`, `orchestration/9-browser` | Planned |
 
-**Last checkpoint:** Stages 1-3 complete on `stage/*` branches. Stages 4-7 implemented but accumulated on `chore/tune-product-direction` (1059-line SKILL.md). Lobby restructure plan written.
+**Last checkpoint:** Lobby restructure complete. All 7 orchestration stages rebuilt as clean, isolated `orchestration/*` branches. Main is the lobby -- `/learn`, `/dojo`, `/advisor`, and the full 15-pattern library. Source anchors verified against actual branch content.
 
-**Next step:** Execute the lobby restructure plan (`docs/plans/2026-02-23-refactor-lobby-branch-restructure-plan.md`):
-1. Strip main to lobby (Phase 1)
-2. Expand dojo pattern library (Phase 2)
-3. Rebuild orchestration/1-3 from stage/1-3 (Phase 3)
-4. Rebuild orchestration/4-7 from scratch (Phases 4-7)
-5. Finalize anchors, master plan, branch protection (Phase 8)
+**Completed phases:**
+1. Strip main to lobby -- done
+2. Expand dojo pattern library (9 existing + 6 new patterns) -- done
+3. Rebuild orchestration/1-3 from stage/1-3 -- done
+4. Rebuild orchestration/4-7 from scratch -- done
+5. Finalize anchors, master plan, README, branch protection -- done
 
-**Important:** The original `stage/*` branches remain frozen and protected. The new `orchestration/*` branches supersede them.
+**Important:** The original `stage/*` branches remain frozen and protected. The `orchestration/*` branches supersede them and are also immutable after creation.
 
 ---
 

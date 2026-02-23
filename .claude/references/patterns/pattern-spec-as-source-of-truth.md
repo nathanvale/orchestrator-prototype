@@ -123,4 +123,4 @@ Stage 3 (full proof):
 - `orchestration/3-full:.claude/skills/orchestrator/SKILL.md:L200-L280` -- spec re-read at wave boundaries, idempotent resumption via status check, spec.reread event
 
 Stage 7 (extension -- hydration checkpoints):
-- Planned -- orchestration/7-hitl (not yet created)
+- `orchestration/7-hitl:.claude/skills/orchestrator/SKILL.md:L361-L395` -- Hydration Checkpoint section added to spec file format, checkpoint written after spec creation and updated after every state change

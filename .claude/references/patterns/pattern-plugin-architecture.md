@@ -98,4 +98,5 @@ The marketplace README must address: coordination pattern (how agents interact),
 ## Source Anchors
 
 Stage 5 (concept introduction and proof):
-- Planned -- orchestration/5-plugin (not yet created)
+- `orchestration/5-plugin:docs/patterns/plugin-architecture.md` -- Pattern explanation: extraction mapping, what changes vs. what stays the same, marketplace integration
+- `orchestration/5-plugin:.claude/skills/orchestrator/SKILL.md` -- Identical to Stage 4 -- SKILL.md unchanged; extraction is docs-only at this stage

@@ -107,4 +107,6 @@ The `difficulty: hard` tag in the spec file's task entry is the routing signal. 
 ## Source Anchors
 
 Stage 6 (concept introduction and proof):
-- Planned -- orchestration/6-codex (not yet created)
+- `orchestration/6-codex:.claude/skills/orchestrator/SKILL.md:L203-L242` -- Step 4b: difficulty assessment rubric, hard/standard signals, Codex availability check
+- `orchestration/6-codex:.claude/skills/orchestrator/SKILL.md:L490-L514` -- Step 10: difficulty routing check, Codex dispatch path, fallback to standard builder
+- `orchestration/6-codex:.claude/skills/orchestrator/references/codex-escalation.md` -- Full difficulty signal definitions and Codex dispatch protocol

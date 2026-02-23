@@ -103,4 +103,5 @@ The cost model: one orchestrator reasoning pass per task at plan time vs. 1-3 ex
 ## Source Anchors
 
 Stage 6 (concept introduction and proof):
-- Planned -- orchestration/6-codex (not yet created)
+- `orchestration/6-codex:.claude/skills/orchestrator/SKILL.md:L381-L410` -- Step 7b: spec hardening pass, ambiguity signals, rewrite rules, audit trail with Pre-Hardening subsection
+- `orchestration/6-codex:.claude/skills/orchestrator/references/codex-escalation.md` -- Full ambiguity signal taxonomy and rewrite rule examples
