@@ -81,9 +81,6 @@ Step 1 of SKILL.md parses all flags accumulated through the chain:
 
 Each stage adds its flag to the existing parsing block. Do not remove or rewrite previous flags.
 
-### Known immutability constraint
-Stage 7's README says "Next: Stage 8 (planned)". Since orchestration/7-hitl is immutable, we cannot update this. This is an accepted known issue -- the actual navigation works via /learn on main.
-
 ## Relevant Files
 - `specs/master-plan.md` -- stage 8-9 definitions, patterns introduced, verification prompts
 - `orchestration/7-hitl:.claude/skills/orchestrator/SKILL.md` -- 1114 lines, base for stage 8
@@ -229,7 +226,7 @@ Full acceptance criteria check.
 
 **Validators stay on the lobby and inspect branches remotely.** They never check out a module branch. They use `git show`, `git ls-tree`, and `git diff` to read files and verify structure from the lobby.
 
-**Validators use a dedicated agent type:** All validators are dispatched with `subagent_type: framework-validator` (defined in `.claude/agents/framework-validator.md`). This agent has `skills: module-branch-validator` in its frontmatter, which auto-injects the full validation skill (SKILL.md + references/checklist.md) at startup. No manual prompt injection needed -- the orchestrator simply passes parameters (MODULE, BRANCH, STAGE, etc.) and the agent already has the complete validation workflow in context.
+**Validators use the generic validator agent:** All validators are dispatched with `subagent_type: validator` (defined in `.claude/agents/validator.md`). This agent has `skills: module-branch-validator` in its frontmatter, which auto-injects the full validation skill (SKILL.md + references/checklist.md) at startup. The skill determines what gets validated -- swapping the skill frontmatter makes it validate anything. No manual prompt injection needed -- the orchestrator simply passes parameters (MODULE, BRANCH, STAGE, etc.) and the agent already has the complete validation workflow in context.
 
 ### Model Selection Guide
 
@@ -276,7 +273,7 @@ Full acceptance criteria check.
 - Validator
   - Name: validator-patterns-8-9
   - Role: Verify 19 pattern refs + docs, dojo/advisor route all 19, /learn has 9 stages
-  - Agent Type: framework-validator
+  - Agent Type: validator
   - Model: haiku
   - Operates on: lobby (inspects branches via git show)
   - Resume: true
@@ -284,7 +281,7 @@ Full acceptance criteria check.
 - Validator
   - Name: validator-branches-8-9
   - Role: Verify orchestration/8-parallel and orchestration/9-browser have correct SKILL.md, /lobby, CLAUDE.md, navigation, clean diffs
-  - Agent Type: framework-validator
+  - Agent Type: validator
   - Model: haiku
   - Operates on: lobby (inspects branches via git show)
   - Resume: true
@@ -292,7 +289,7 @@ Full acceptance criteria check.
 - Validator
   - Name: validator-final-8-9
   - Role: Full acceptance criteria check for stages 8-9 specifically
-  - Agent Type: framework-validator
+  - Agent Type: validator
   - Model: haiku
   - Operates on: lobby (inspects branches via git show)
   - Resume: true
@@ -300,7 +297,7 @@ Full acceptance criteria check.
 - Validator
   - Name: validator-full-framework
   - Role: Comprehensive framework audit across ALL 9 branches + lobby. Verifies every rule from the lobby restructure framework holds across the entire chain.
-  - Agent Type: framework-validator
+  - Agent Type: validator
   - Model: sonnet
   - Operates on: lobby (inspects ALL branches via git show)
   - Resume: true
@@ -334,7 +331,7 @@ Full acceptance criteria check.
 - **Task ID**: validate-patterns-8-9
 - **Depends On**: expand-patterns-8-9
 - **Assigned To**: validator-patterns-8-9
-- **Agent Type**: framework-validator
+- **Agent Type**: validator
 - **Model**: haiku
 - **Parallel**: false
 - Verify 19 pattern reference files exist in `.claude/references/patterns/`
@@ -385,7 +382,7 @@ Full acceptance criteria check.
 - **Task ID**: validate-branches-8-9
 - **Depends On**: build-stage-9
 - **Assigned To**: validator-branches-8-9
-- **Agent Type**: framework-validator
+- **Agent Type**: validator
 - **Model**: haiku
 - **Parallel**: false
 - For orchestration/8-parallel and orchestration/9-browser:
@@ -434,7 +431,7 @@ Full acceptance criteria check.
 - **Task ID**: validate-all-8-9
 - **Depends On**: finalize-8-9
 - **Assigned To**: validator-final-8-9
-- **Agent Type**: framework-validator
+- **Agent Type**: validator
 - **Model**: haiku
 - **Parallel**: false
 - Stages 8-9 specific acceptance criteria:
@@ -467,7 +464,7 @@ Full acceptance criteria check.
 - **Task ID**: validate-full-framework
 - **Depends On**: validate-all-8-9
 - **Assigned To**: validator-full-framework
-- **Agent Type**: framework-validator
+- **Agent Type**: validator
 - **Model**: sonnet
 - **Parallel**: false
 - Comprehensive checklist validating the ENTIRE lobby restructure framework across all 9 module branches and the lobby. This is the definitive "ship it" gate.
@@ -692,4 +689,4 @@ E4. CI verification:
 - Stages 8-9 are written from scratch -- there is no reference SKILL.md to copy from. Builders use the master plan stage descriptions and this spec as their guide.
 - `specs/examples/` files are created on both the module branches (Tasks 3, 4) and on the lobby (Task 6), consistent with how stages 4-7 examples were handled.
 - Validator dispatch order in parallel mode: merge ALL worktrees first, THEN dispatch validators on the merged state. Validators need to see cross-task consistency.
-- **Validator agent type:** All validators use `subagent_type: framework-validator` (`.claude/agents/framework-validator.md`), which has `skills: module-branch-validator` in its frontmatter. The skill is auto-injected at startup -- no manual prompt injection needed. The orchestrator just passes parameters (MODULE, BRANCH, STAGE, etc.) in the Task prompt.
+- **Generic validator agent:** All validators use `subagent_type: validator` (`.claude/agents/validator.md`), which has `skills: module-branch-validator` in its frontmatter. The skill is auto-injected at startup -- no manual prompt injection needed. The orchestrator just passes parameters (MODULE, BRANCH, STAGE, etc.) in the Task prompt. The skill composability pattern makes this validator reusable for any validation task by swapping the skill frontmatter.
