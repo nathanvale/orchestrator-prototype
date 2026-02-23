@@ -223,6 +223,14 @@ Full acceptance criteria check.
 - IMPORTANT: You NEVER operate directly on the codebase. Use Task and Task* tools only.
 - Take note of the session id (agentId) of each team member for resume operations.
 
+### Dispatch Model: Builders vs Validators
+
+**Builders check out branches and write files.** They need to be on the target branch to create/modify content. They use `git checkout` to switch branches.
+
+**Validators stay on the lobby and inspect branches remotely.** They never check out a module branch. They use `git show`, `git ls-tree`, and `git diff` to read files and verify structure from the lobby. This means they always have access to lobby-only files (like the module-branch-validator skill).
+
+**Skill injection for validators:** The orchestrator runs on the lobby where `.claude/skills/module-branch-validator/` exists on disk. Before dispatching a validator, the orchestrator reads the SKILL.md and references/checklist.md, then injects both into the validator's Task prompt. The validator receives the full validation workflow and checklist as context -- no cross-branch file resolution needed.
+
 ### Model Selection Guide
 
 | Role | Model | Rationale |
@@ -238,6 +246,7 @@ Full acceptance criteria check.
   - Role: Create 4 new pattern reference files, 3-4 new docs/patterns files, update dojo and advisor routing tables, update /learn and README for 9 stages
   - Agent Type: general-purpose
   - Model: sonnet
+  - Operates on: refactor/lobby-restructure (lobby)
   - Resume: true
 
 - Builder
@@ -245,6 +254,7 @@ Full acceptance criteria check.
   - Role: Build orchestration/8-parallel from orchestration/7-hitl (parallel dispatch, worktree isolation, ~1200 line SKILL.md)
   - Agent Type: general-purpose
   - Model: sonnet
+  - Operates on: orchestration/8-parallel (checks out from orchestration/7-hitl)
   - Resume: true
 
 - Builder
@@ -252,6 +262,7 @@ Full acceptance criteria check.
   - Role: Build orchestration/9-browser from orchestration/8-parallel (browser validation, Ralph Wiggum loop, ~1300 line SKILL.md)
   - Agent Type: general-purpose
   - Model: sonnet
+  - Operates on: orchestration/9-browser (checks out from orchestration/8-parallel)
   - Resume: true
 
 - Builder
@@ -259,6 +270,7 @@ Full acceptance criteria check.
   - Role: Update source anchors for 4 new pattern refs, update master plan, verify /learn and README
   - Agent Type: general-purpose
   - Model: sonnet
+  - Operates on: refactor/lobby-restructure (lobby)
   - Resume: true
 
 - Validator
@@ -266,6 +278,8 @@ Full acceptance criteria check.
   - Role: Verify 19 pattern refs + docs, dojo/advisor route all 19, /learn has 9 stages
   - Agent Type: general-purpose
   - Model: haiku
+  - Operates on: lobby (inspects branches via git show)
+  - Skill Injection: orchestrator reads `.claude/skills/module-branch-validator/SKILL.md` + `references/checklist.md` and injects into Task prompt
   - Resume: true
 
 - Validator
@@ -273,6 +287,8 @@ Full acceptance criteria check.
   - Role: Verify orchestration/8-parallel and orchestration/9-browser have correct SKILL.md, /lobby, CLAUDE.md, navigation, clean diffs
   - Agent Type: general-purpose
   - Model: haiku
+  - Operates on: lobby (inspects branches via git show)
+  - Skill Injection: orchestrator reads `.claude/skills/module-branch-validator/SKILL.md` + `references/checklist.md` and injects into Task prompt
   - Resume: true
 
 - Validator
@@ -280,6 +296,8 @@ Full acceptance criteria check.
   - Role: Full acceptance criteria check for stages 8-9 specifically
   - Agent Type: general-purpose
   - Model: haiku
+  - Operates on: lobby (inspects branches via git show)
+  - Skill Injection: orchestrator reads `.claude/skills/module-branch-validator/SKILL.md` + `references/checklist.md` and injects into Task prompt
   - Resume: true
 
 - Validator
@@ -287,6 +305,8 @@ Full acceptance criteria check.
   - Role: Comprehensive framework audit across ALL 9 branches + lobby. Verifies every rule from the lobby restructure framework holds across the entire chain.
   - Agent Type: general-purpose
   - Model: sonnet
+  - Operates on: lobby (inspects ALL branches via git show)
+  - Skill Injection: orchestrator reads `.claude/skills/module-branch-validator/SKILL.md` + `references/checklist.md` and injects into Task prompt
   - Resume: true
 
 ## Step by Step Tasks
@@ -676,3 +696,4 @@ E4. CI verification:
 - Stages 8-9 are written from scratch -- there is no reference SKILL.md to copy from. Builders use the master plan stage descriptions and this spec as their guide.
 - `specs/examples/` files are created on both the module branches (Tasks 3, 4) and on the lobby (Task 6), consistent with how stages 4-7 examples were handled.
 - Validator dispatch order in parallel mode: merge ALL worktrees first, THEN dispatch validators on the merged state. Validators need to see cross-task consistency.
+- **Validator skill injection:** The `module-branch-validator` skill lives on the lobby. Validators never check out module branches -- they stay on the lobby and inspect remotely via `git show`. The orchestrator (also on the lobby) reads the SKILL.md and references/checklist.md from disk, then injects both into each validator's Task prompt. No cross-branch file resolution needed.

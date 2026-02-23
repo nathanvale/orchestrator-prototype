@@ -41,6 +41,7 @@ git checkout orchestration/7-hitl       # Latest: HITL bounce-back + persistence
   skills/
     agentic-dojo/     # /dojo -- pattern teacher
     pattern-advisor/  # /advisor -- pattern recommender
+    module-branch-validator/  # Validation skill for module branch framework compliance
   references/
     patterns/         # Structured pattern refs (11-slot frontmatter)
   settings.json       # Tool permissions
