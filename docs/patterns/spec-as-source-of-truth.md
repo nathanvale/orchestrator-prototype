@@ -114,6 +114,14 @@ The spec file enables safe resumption from interruption. Before dispatching a Bu
 
 This means re-invoking `/orchestrate` on the same prompt, with the same spec file on disk, safely skips already-validated tasks and picks up from the interruption point. Completed work is never re-executed.
 
+### Stage 7 Extension: Hydration Checkpoint
+
+Stage 7 extends the spec file into a full orchestration state store. A `## Hydration Checkpoint` section is added and updated throughout execution. It contains a YAML snapshot of the complete runtime state: wave position, agent sessions (agentId per task), retry counters, bounce history, and routing flags.
+
+The `--resume <spec-path>` flag reads this checkpoint and restores the full state, enabling cross-session resume. An orchestration interrupted at Wave 3 due to a bounce-back (user not available to respond) can be resumed in a new Claude Code session with no loss of progress.
+
+See [`docs/patterns/hydration-pattern.md`](hydration-pattern.md) for full details.
+
 ---
 
 ## Why Context Compaction Matters
@@ -154,3 +162,5 @@ This is not a workaround -- it is correct architecture. An orchestrator that dep
 | [`.claude/skills/orchestrator/references/dag-execution.md`](../../.claude/skills/orchestrator/references/dag-execution.md) | Full spec file template, idempotency rules, when to write vs. update |
 | [`specs/master-plan.md`](../../specs/master-plan.md) | Key design decisions section -- "spec re-read at each wave" rationale |
 | [`.claude/skills/orchestrator/SKILL.md`](../../.claude/skills/orchestrator/SKILL.md) | Steps 4 and 6 of the dispatch protocol -- spec file writing and wave-boundary re-read |
+| [`docs/patterns/hydration-pattern.md`](hydration-pattern.md) | Stage 7 extension -- spec file as full state store with cross-session resume |
+| [`docs/patterns/hitl-protocol.md`](hitl-protocol.md) | Stage 7 bounce-back protocol that relies on spec persistence |
