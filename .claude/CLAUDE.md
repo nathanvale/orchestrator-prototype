@@ -17,8 +17,7 @@ An educational repository for learning agent orchestration patterns incrementall
 - `/learn` -- browse available modules and stages
 - `/dojo` -- Miyagi-style pattern teacher (explains orchestration concepts)
 - `/advisor` -- recommends patterns for your problem
-- `docs/patterns/` -- single source of truth for pattern content (portable)
-- `.claude/references/patterns/` -- structured pattern refs with 11-slot frontmatter
+- `.claude/references/patterns/` -- single source of truth for pattern content (11-slot frontmatter)
 
 The orchestrator itself does NOT live on main. To run `/orchestrate`, checkout a module branch:
 
@@ -27,7 +26,7 @@ git checkout orchestration/1-dispatch   # Simplest: single-task dispatch loop
 git checkout orchestration/9-browser    # Latest: Browser validation + Ralph Wiggum loop
 ```
 
-**See:** `specs/master-plan.md` for the full roadmap, `docs/patterns/` for pattern explanations.
+**See:** `.claude/references/patterns/` for pattern content and source anchors.
 
 ---
 
@@ -42,18 +41,9 @@ git checkout orchestration/9-browser    # Latest: Browser validation + Ralph Wig
     agentic-dojo/     # /dojo -- pattern teacher
     pattern-advisor/  # /advisor -- pattern recommender
   references/
-    patterns/         # Structured pattern refs (11-slot frontmatter)
+    patterns/         # Single source of truth for pattern content (11-slot frontmatter)
   settings.json       # Tool permissions
   CLAUDE.md           # This file
-
-docs/
-  patterns/           # SINGLE SOURCE OF TRUTH for pattern content (portable)
-  agents.md           # Agent catalog (reference only)
-  plans/              # Implementation plans
-
-specs/
-  master-plan.md      # Full roadmap and stage definitions
-  examples/           # Gallery of example spec outputs per stage
 
 prompts/              # Curated test prompts per stage
 
@@ -62,7 +52,7 @@ biome.json            # Biome config (needed for module branches)
 package.json          # Project config (simplified -- no src/ on main)
 ```
 
-**Not on main:** `.claude/agents/`, `.claude/skills/orchestrator/`, `.claude/commands/orchestrate.md`, `scripts/emit-event.ts`, `src/`, `tests/`
+**Not on main:** `.claude/agents/`, `.claude/skills/orchestrator/`, `.claude/commands/orchestrate.md`, `scripts/emit-event.ts`, `src/`, `tests/`, `docs/`, `specs/`
 
 ---
 
@@ -152,13 +142,12 @@ Source anchors use the format `<branch>:<file-path>:L<start>-L<end>`. The `sed -
 
 ## Adding a New Pattern
 
-1. Write source doc in `docs/patterns/<slug>.md`
-2. Create `.claude/references/patterns/pattern-<slug>.md` with 11-slot frontmatter
+1. Create `.claude/references/patterns/pattern-<slug>.md` with 11-slot frontmatter
    (copy an existing pattern file as template -- verify all 11 slots are present)
-3. Add keyword row to `.claude/skills/agentic-dojo/SKILL.md` Step 2 pattern table
-4. Add aliases to SKILL.md Step 2 alias table
-5. Add slug to SKILL.md zero-state pattern list
-6. If Pattern Advisor exists: add scoring signals for the new pattern
+2. Add keyword row to `.claude/skills/agentic-dojo/SKILL.md` Step 2 pattern table
+3. Add aliases to SKILL.md Step 2 alias table
+4. Add slug to SKILL.md zero-state pattern list
+5. If Pattern Advisor exists: add scoring signals for the new pattern
 
 ---
 
@@ -196,10 +185,8 @@ git diff orchestration/2-dag..orchestration/3-full        # What stage 3 adds
 
 # Read a file from another branch without checking out
 git show orchestration/2-dag:.claude/skills/orchestrator/SKILL.md
-git show main:docs/patterns/wave-computation.md
+git show main:.claude/references/patterns/pattern-wave-computation.md
 ```
-
-See `specs/master-plan.md` "Branch Strategy" for full rules.
 
 ---
 
@@ -209,8 +196,8 @@ See `specs/master-plan.md` "Branch Strategy" for full rules.
 
 1. Use named exports (no defaults)
 2. Add JSDoc to exported functions
-3. Keep `docs/patterns/` as the single source of truth for pattern content
-4. Use 11-slot frontmatter in all `.claude/references/patterns/` files
+3. Use `.claude/references/patterns/` as the single source of truth for pattern content
+4. Use 11-slot frontmatter in all pattern reference files
 
 ### NEVER
 
