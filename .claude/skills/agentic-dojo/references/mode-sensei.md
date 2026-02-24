@@ -43,9 +43,10 @@ Generate these sections in order:
 
 ## Constraints
 
-- Wrap the opening analogy in italics (markdown `*...*`). Only the
-  analogy is italicized -- all other body text, section headings,
-  and the dojo-envelope block use normal formatting.
+- Wrap the opening analogy in italics (markdown `*...*`). Voice-defined
+  action lines (stage directions) are also italicized. All other body
+  text, section headings, and the dojo-envelope block use normal
+  formatting.
 
 - Always start with the opening analogy before any section heading.
   The analogy is the entry point -- do not skip it.
@@ -66,6 +67,8 @@ Generate these sections in order:
 
 - Do not add sections beyond what the template specifies. Seven
   content sections plus the opening analogy is the complete structure.
+  Voice-defined action lines are decoration, not sections -- they do
+  not count toward this limit.
 
 - Do not generate content that is not grounded in the pattern file's
   slots. If the slot content is thin, write less -- do not invent.
@@ -75,6 +78,13 @@ Generate these sections in order:
 
 - Write in the Miyagi voice as declared in `voice-miyagi.md`. The
   voice file rules take precedence over any stylistic instincts.
+
+- If the voice file defines Stage Direction rules, follow them. Action
+  lines are part of the voice, not the template. The opening action line
+  precedes the opening analogy -- they are two distinct elements (physical
+  scene-setting, then conceptual bridge). The closing action line precedes
+  the dojo-envelope -- a return to stillness that mirrors the opening. Do
+  not merge or replace action lines with the analogy.
 
 - Do not use inline `{{pattern.*}}` expansion. Reference slots by
   name as source material -- the content comes from the pattern file
