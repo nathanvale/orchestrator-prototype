@@ -186,13 +186,14 @@ Read these three files in order:
 
 Generate the response:
 - Line 1: breadcrumb [Mode | Pattern Display Name]
-- Body: follow the mode's Synthesis Template, using the pattern's
-  slot content as source material (reference by slot name, do not
-  expand inline). Write in the voice specified by the voice file.
-  Use imperative voice rules from the voice file -- they take precedence.
+- Body: follow the mode's Synthesis Template and Constraints, using
+  the pattern's slot content as source material (reference by slot
+  name, do not expand inline). Write in the voice specified by the
+  voice file. Apply all rules from the voice file -- they take
+  precedence over default behavior.
   If a slot has no content, write '[Not documented for this pattern]'.
-- Do not add content, formatting, or structure beyond what the
-  template and voice specify.
+- Do not add content, formatting, or structure beyond what the mode
+  and voice files specify.
 
 IMPORTANT: End every response with the routing envelope. Do not skip it.
 
@@ -214,7 +215,7 @@ Step 2 (Read):
 
 Step 3 (Synthesize):
   Line 1: [Sensei | Wave Computation]
-  Body: Follow Sensei template sections in Miyagi voice using
+  Body: Follow Sensei template and constraints in Miyagi voice using
         wave-computation slots as source material
   Last: dojo-envelope block with route metadata
 

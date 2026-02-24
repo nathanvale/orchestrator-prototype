@@ -46,7 +46,8 @@ related:
 - Output MUST be a single fenced YAML code block with `yaml` info string.
   No fenced blocks with other info strings.
 
-- Precede the YAML block with the breadcrumb line only. No narrative
+- Precede the YAML block with the breadcrumb line only (voice-defined
+  action lines may appear before the breadcrumb). No narrative
   introduction, no explanation, no section headings outside the block.
 
 - Multi-line values use YAML block scalar (`|`). Do not use inline
@@ -71,6 +72,11 @@ related:
 
 - The JARVIS voice applies to the values within the YAML (word choice,
   precision, brevity) -- not to added prose around it.
+
+- If the voice file defines Stage Direction rules, follow them. The
+  opening action line precedes the breadcrumb line. The closing action
+  line follows the YAML block but precedes the dojo-envelope. Both are
+  part of the voice, not the template.
 
 - The dojo-envelope block is the final element after the YAML block.
   Do not omit it. Format: fenced block with `dojo-envelope` info string.
