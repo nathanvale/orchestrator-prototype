@@ -19,6 +19,29 @@ permissions:
   pull-requests: write
 
 jobs:
+  detect:
+    name: Detect source code
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      has_src: ${{ steps.check.outputs.has_src }}
+    steps:
+      - name: Checkout (sparse - src/ only)
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: src
+          sparse-checkout-cone-mode: true
+      - name: Check for src/
+        id: check
+        run: |
+          if [ -d "src" ] && [ "$(ls -A src 2>/dev/null)" ]; then
+            echo "has_src=true" >> "$GITHUB_OUTPUT"
+            echo "Source code detected in src/"
+          else
+            echo "has_src=false" >> "$GITHUB_OUTPUT"
+            echo "No source code in src/ -- code jobs will be skipped"
+          fi
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -40,6 +63,8 @@ jobs:
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
+    needs: [detect]
+    if: needs.detect.outputs.has_src == 'true'
     timeout-minutes: 10
 
     steps:
@@ -58,7 +83,8 @@ jobs:
   test:
     name: Tests + Coverage
     runs-on: ubuntu-latest
-    needs: [lint, typecheck]
+    needs: [detect, lint, typecheck]
+    if: needs.detect.outputs.has_src == 'true'
     timeout-minutes: 15
     outputs:
       coverage_lines: ${{ steps.cov.outputs.coverage_lines }}
@@ -154,7 +180,8 @@ jobs:
   quality:
     name: Repo quality (delta since main)
     runs-on: ubuntu-latest
-    needs: [test]
+    needs: [detect, test]
+    if: needs.detect.outputs.has_src == 'true'
     timeout-minutes: 10
     steps:
       - name: Checkout
@@ -202,7 +229,7 @@ jobs:
   gate:
     name: All checks passed
     runs-on: ubuntu-latest
-    needs: [lint, typecheck, test, quality, lint-scripts]
+    needs: [detect, lint, typecheck, test, quality, lint-scripts]
     if: always()
     timeout-minutes: 5
     steps:
@@ -212,6 +239,7 @@ jobs:
             echo "One or more required jobs failed or were cancelled"
             echo
             echo "Results:"
+            echo "  Detect: ${{ needs.detect.result }}"
             echo "  Lint: ${{ needs.lint.result }}"
             echo "  Typecheck: ${{ needs.typecheck.result }}"
             echo "  Tests + Coverage: ${{ needs.test.result }}"
@@ -229,15 +257,22 @@ jobs:
             echo
             echo "| Check | Status |"
             echo "|---|---|"
+            echo "| Detect source code | ${{ needs.detect.result }} |"
             echo "| Lint | ${{ needs.lint.result }} |"
             echo "| Typecheck | ${{ needs.typecheck.result }} |"
             echo "| Tests + Coverage | ${{ needs.test.result }} |"
             echo "| Repo quality (delta since main) | ${{ needs.quality.result }} |"
             echo "| Lint Shell Scripts | ${{ needs.lint-scripts.result }} |"
             echo
-            echo "### Coverage"
-            echo
-            echo "- Lines: ${{ needs.test.outputs.coverage_lines }}%"
-            echo "- Branches: ${{ needs.test.outputs.coverage_branches }}%"
-            echo "- Functions: ${{ needs.test.outputs.coverage_functions }}%"
+            if [[ "${{ needs.detect.outputs.has_src }}" == "true" ]]; then
+              echo "### Coverage"
+              echo
+              echo "- Lines: ${{ needs.test.outputs.coverage_lines }}%"
+              echo "- Branches: ${{ needs.test.outputs.coverage_branches }}%"
+              echo "- Functions: ${{ needs.test.outputs.coverage_functions }}%"
+            else
+              echo "### Coverage"
+              echo
+              echo "Coverage skipped -- no source code detected in \`src/\`"
+            fi
           } >> "$GITHUB_STEP_SUMMARY"

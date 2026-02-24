@@ -45,14 +45,12 @@ git checkout orchestration/9-browser    # Latest: Browser validation + Ralph Wig
   settings.json       # Tool permissions
   CLAUDE.md           # This file
 
-prompts/              # Curated test prompts per stage
-
 tsconfig.json         # TypeScript config (needed for module branches)
 biome.json            # Biome config (needed for module branches)
 package.json          # Project config (simplified -- no src/ on main)
 ```
 
-**Not on main:** `.claude/agents/`, `.claude/skills/orchestrator/`, `.claude/commands/orchestrate.md`, `scripts/emit-event.ts`, `src/`, `tests/`, `docs/`, `specs/`
+**Not on main:** `.claude/agents/`, `.claude/skills/orchestrator/`, `.claude/commands/orchestrate.md`, `scripts/emit-event.ts`, `src/`, `tests/`, `docs/`, `specs/`, `prompts/`
 
 ---
 
