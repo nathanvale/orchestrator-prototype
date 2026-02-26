@@ -1,4 +1,4 @@
-# HOP Orchestrator - Learn Agent Orchestration Patterns
+# My Agent Dojo - Learn Agent Orchestration Patterns
 
 Each branch is a standalone lesson. Checkout any stage to see the
 orchestrator at that complexity level.
@@ -20,7 +20,7 @@ orchestrator at that complexity level.
 ## Quick Start
 
 ```
-git clone https://github.com/nathanvale/orchestrator-prototype
+git clone https://github.com/nathanvale/my-agent-dojo
 git checkout orchestration/1-dispatch    # Start here
 # Run: /orchestrate "add a greet function"
 ```

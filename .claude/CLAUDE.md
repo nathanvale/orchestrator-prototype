@@ -2,9 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Orchestrator Prototype -- Learning Lobby
+## My Agent Dojo -- Learning Lobby
 
-This is the **lobby** branch of the HOP Orchestrator prototype -- a learning hub for agent orchestration patterns. Main holds the learning tools and pattern library. Each module branch (`orchestration/1-dispatch`, `orchestration/2-dag`, etc.) is a standalone lesson you checkout to see a working orchestrator at that complexity level.
+This is the **lobby** branch of My Agent Dojo -- a learning hub for agent orchestration patterns. Main holds the learning tools and pattern library. Each module branch (`orchestration/1-dispatch`, `orchestration/2-dag`, etc.) is a standalone lesson you checkout to see a working orchestrator at that complexity level.
 
 **Stack:** TypeScript, Bun, Biome, Claude Code agents/skills/commands
 

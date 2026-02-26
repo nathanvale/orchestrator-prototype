@@ -1,8 +1,8 @@
 {
-	"name": "orchestrator-prototype",
+	"name": "my-agent-dojo",
 	"version": "0.0.0",
 	"private": true,
-	"description": "HOP Orchestrator prototype - learn agent orchestration patterns incrementally",
+	"description": "My Agent Dojo - learn agent orchestration patterns incrementally",
 	"author": {
 		"name": "Nathan Vale",
 		"url": "https://github.com/nathanvale"
@@ -11,12 +11,12 @@
 	"type": "module",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/nathanvale/orchestrator-prototype.git"
+		"url": "git+https://github.com/nathanvale/my-agent-dojo.git"
 	},
 	"bugs": {
-		"url": "https://github.com/nathanvale/orchestrator-prototype/issues"
+		"url": "https://github.com/nathanvale/my-agent-dojo/issues"
 	},
-	"homepage": "https://github.com/nathanvale/orchestrator-prototype#readme",
+	"homepage": "https://github.com/nathanvale/my-agent-dojo#readme",
 	"keywords": [
 		"typescript",
 		"bun",
