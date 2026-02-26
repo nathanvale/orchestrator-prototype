@@ -2,6 +2,7 @@
 slug: ralph-wiggum-loop
 display_name: "Ralph Wiggum Loop"
 one_liner: "A visual retry loop where the browser validator screenshots, finds issues, the builder fixes them, and the cycle repeats until the validator reports PASS or max iterations are reached."
+intel_date: null
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

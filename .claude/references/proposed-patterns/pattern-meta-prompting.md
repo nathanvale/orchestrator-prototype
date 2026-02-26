@@ -2,6 +2,7 @@
 slug: meta-prompting
 display_name: "Meta-Prompting"
 one_liner: "After a completed orchestration, a reflection agent analyzes the execution trace and proposes rule improvements that compound the orchestrator's effectiveness across runs -- with mandatory human approval before any change is applied."
+intel_date: 2026-02-26
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

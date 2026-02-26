@@ -2,6 +2,7 @@
 slug: context-engineering
 display_name: "Context Engineering"
 one_liner: "Actively manage the quality and composition of an agent's context window through controlled handoffs, context surgery, and spec-file re-reads -- because context degradation directly determines agent capability."
+intel_date: 2026-02-26
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

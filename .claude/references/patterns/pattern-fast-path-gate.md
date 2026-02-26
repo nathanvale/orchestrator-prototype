@@ -2,6 +2,7 @@
 slug: fast-path-gate
 display_name: "Fast Path Gate"
 one_liner: "A hard complexity filter that routes simple prompts directly to a single Builder/Validator pair, bypassing the full DAG pipeline."
+intel_date: null
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

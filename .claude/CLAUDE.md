@@ -65,6 +65,7 @@ Pattern reference files in `.claude/references/patterns/` use a canonical 11-slo
 slug: <kebab-case-identifier>
 display_name: "<Human-readable name>"
 one_liner: "<One sentence description of what the pattern does>"
+intel_date: YYYY-MM-DD | null
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"
@@ -79,6 +80,15 @@ slots:
   source_anchors: "## Source Anchors"
 ---
 ```
+
+### Top-Level Metadata Fields
+
+| Field | Format | Purpose |
+|-------|--------|---------|
+| `slug` | kebab-case string | Unique pattern identifier |
+| `display_name` | quoted string | Human-readable name |
+| `one_liner` | quoted string | One sentence description |
+| `intel_date` | `YYYY-MM-DD` or `null` | Date the Source Anchors were last researched. Use `null` for patterns that predate community research tracking. |
 
 ### Slot Definitions
 
@@ -141,7 +151,7 @@ Source anchors use the format `<branch>:<file-path>:L<start>-L<end>`. The `sed -
 ## Adding a New Pattern
 
 1. Create `.claude/references/patterns/pattern-<slug>.md` with 11-slot frontmatter
-   (copy an existing pattern file as template -- verify all 11 slots are present)
+   (copy an existing pattern file as template -- verify all 11 slots and `intel_date` are present)
 2. Add keyword row to `.claude/skills/agentic-dojo/SKILL.md` Step 2 pattern table
 3. Add aliases to SKILL.md Step 2 alias table
 4. Add slug to SKILL.md zero-state pattern list

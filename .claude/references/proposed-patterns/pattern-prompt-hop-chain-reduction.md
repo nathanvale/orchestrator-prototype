@@ -2,6 +2,7 @@
 slug: prompt-hop-chain-reduction
 display_name: "Prompt Hop Chain Reduction"
 one_liner: "Collapse multi-file instruction chains into single-location inline instructions for gate behaviors, because each file-read hop degrades reliability geometrically."
+intel_date: 2026-02-26
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

@@ -2,6 +2,7 @@
 slug: spec-as-source-of-truth
 display_name: "Spec as Source of Truth"
 one_liner: "Write the full orchestration plan to disk before dispatching any agents, and re-read it at each wave boundary to defend against context compaction."
+intel_date: null
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

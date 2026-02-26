@@ -2,6 +2,7 @@
 slug: hydration-pattern
 display_name: "Hydration Pattern"
 one_liner: "Serialize orchestration state into the spec file as a structured checkpoint, enabling cross-session resume by rehydrating from the checkpoint and skipping completed work."
+intel_date: null
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

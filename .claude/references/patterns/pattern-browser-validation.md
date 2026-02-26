@@ -2,6 +2,7 @@
 slug: browser-validation
 display_name: "Browser Validation"
 one_liner: "For UI-facing tasks, the validator uses the agent-browser CLI to take screenshots and assert visual/functional correctness after a builder completes."
+intel_date: null
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

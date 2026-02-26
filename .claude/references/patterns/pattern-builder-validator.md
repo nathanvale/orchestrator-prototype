@@ -2,6 +2,7 @@
 slug: builder-validator
 display_name: "Builder/Validator"
 one_liner: "Separate code execution from verification by assigning each role to a distinct agent with non-overlapping tool sets."
+intel_date: null
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

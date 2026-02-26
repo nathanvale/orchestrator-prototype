@@ -2,6 +2,7 @@
 slug: spec-hardening
 display_name: "Spec Hardening"
 one_liner: "Rewrite vague task descriptions into concrete, implementation-ready specs with resolved file paths, measurable acceptance criteria, and explicit function signatures before any builder is dispatched."
+intel_date: null
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

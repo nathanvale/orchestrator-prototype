@@ -2,6 +2,7 @@
 slug: hierarchical-persistent-memory
 display_name: "Hierarchical Persistent Memory"
 one_liner: "Place AGENTS.md files at multiple directory levels -- root, component, tool -- so general rules flow down while specific rules stay local, and agents accumulate context by traversing parent directories."
+intel_date: 2026-02-26
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

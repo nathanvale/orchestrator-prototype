@@ -2,6 +2,7 @@
 slug: no-fake-no-mock
 display_name: "No Fake, No Mock, No Stub"
 one_liner: "Explicitly prohibit coding agents from faking, mocking, or stubbing in tests -- agents try hard to fulfill tasks including by writing fake tests that pass validation but verify nothing."
+intel_date: 2026-02-26
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

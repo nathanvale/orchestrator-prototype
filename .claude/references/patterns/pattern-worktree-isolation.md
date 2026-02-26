@@ -2,6 +2,7 @@
 slug: worktree-isolation
 display_name: "Worktree Isolation"
 one_liner: "Each parallel builder operates in a temporary git worktree so concurrent file writes never conflict, with changes merged back after validation."
+intel_date: null
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

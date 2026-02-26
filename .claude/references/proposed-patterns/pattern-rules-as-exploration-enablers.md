@@ -2,6 +2,7 @@
 slug: rules-as-exploration-enablers
 display_name: "Rules as Exploration Enablers"
 one_liner: "Adding AGENTS.md rules to agents counterintuitively increases token usage and runtime, but significantly improves solution quality -- rules reduce environmental uncertainty, freeing agents to explore deeper solution architectures."
+intel_date: 2026-02-26
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

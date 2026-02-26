@@ -2,6 +2,7 @@
 slug: task-dag
 display_name: "Task DAG"
 one_liner: "Decompose a multi-task prompt into a directed acyclic graph of tasks with explicit dependency edges, enforced at the task infrastructure level."
+intel_date: null
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

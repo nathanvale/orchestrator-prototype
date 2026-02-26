@@ -2,6 +2,7 @@
 slug: self-reflecting-analytics
 display_name: "Self-Reflecting Analytics"
 one_liner: "The orchestrator collects structured metrics from its own execution traces -- token usage, tool calls, task durations, retry rates -- to ground future orchestration decisions in data rather than intuition."
+intel_date: 2026-02-26
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

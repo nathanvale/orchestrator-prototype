@@ -2,6 +2,7 @@
 slug: lifecycle-memory-checkpoints
 display_name: "Lifecycle Memory Checkpoints"
 one_liner: "Four write mechanisms fired at specific moments in a conversation's lifecycle -- bootstrap load, pre-compaction flush, session snapshot, user-initiated save -- that turn inert markdown files into persistent agent memory."
+intel_date: 2026-02-26
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

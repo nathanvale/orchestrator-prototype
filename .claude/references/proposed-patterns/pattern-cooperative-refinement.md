@@ -2,6 +2,7 @@
 slug: cooperative-refinement
 display_name: "Cooperative Refinement"
 one_liner: "After parallel builders produce independent solutions, cross-pollinate their outputs so each agent can reflect on the other's approach and produce a refined result at a fraction of the initial build cost."
+intel_date: 2026-02-26
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

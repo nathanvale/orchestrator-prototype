@@ -2,6 +2,7 @@
 slug: arena-mode
 display_name: "Arena Mode"
 one_liner: "Dispatch N builders on the same task concurrently, each in its own worktree, then select the best solution -- turning agent non-determinism from a liability into an asset."
+intel_date: 2026-02-26
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

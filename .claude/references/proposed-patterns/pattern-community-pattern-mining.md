@@ -2,6 +2,7 @@
 slug: community-pattern-mining
 display_name: "Community Pattern Mining"
 one_liner: "Crawl, classify, and index AGENTS.md and CLAUDE.md files from thousands of GitHub repos into a vector database, then use RAG retrieval to bootstrap better agent configurations from community-proven patterns."
+intel_date: 2026-02-26
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

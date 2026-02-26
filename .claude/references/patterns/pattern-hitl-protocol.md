@@ -2,6 +2,7 @@
 slug: hitl-protocol
 display_name: "HITL Protocol"
 one_liner: "When the orchestrator encounters a decision that automated retry cannot resolve, it pauses execution and bounces back to the human for guidance before resuming."
+intel_date: null
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

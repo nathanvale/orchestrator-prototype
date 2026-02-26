@@ -2,6 +2,7 @@
 slug: wave-computation
 display_name: "Wave Computation"
 one_liner: "Group DAG tasks into topologically-sorted execution layers so dependency constraints are respected and independent tasks are eligible for parallelism."
+intel_date: null
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

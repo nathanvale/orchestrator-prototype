@@ -2,6 +2,7 @@
 slug: three-layer-influence
 display_name: "Three-Layer Influence Model"
 one_liner: "Three layers influence coding agent behavior ordered by durability: system prompts (fragile, changes with each release), AGENTS.md (durable, survives across sessions), and user prompts (volatile, single interaction) -- invest engineering effort in the durable middle layer."
+intel_date: 2026-02-26
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

@@ -2,6 +2,7 @@
 slug: difficulty-routing
 display_name: "Difficulty Routing"
 one_liner: "Score each task against a difficulty rubric during decomposition and route hard tasks to a more capable execution engine, with graceful fallback to the standard builder."
+intel_date: null
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

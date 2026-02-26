@@ -2,6 +2,7 @@
 slug: retry-with-resume
 display_name: "Retry with Resume"
 one_liner: "On validation failure, re-dispatch the Builder with full conversation context and specific rejection feedback, while always dispatching the Validator fresh."
+intel_date: null
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

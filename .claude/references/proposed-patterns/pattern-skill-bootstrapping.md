@@ -2,6 +2,7 @@
 slug: skill-bootstrapping
 display_name: "Skill Bootstrapping"
 one_liner: "A single meta-prompt that produces both a capability artifact (script, tool, agent) AND the AGENTS.md rules for future agents to use it -- creating a self-bootstrapping loop where each cycle adds compound capability."
+intel_date: 2026-02-26
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"
