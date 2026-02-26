@@ -13,7 +13,7 @@ description: >-
   prompts, builder-validator, spec files, fast path, iterative refinement,
   parallel execution, browser validation, or visual retry loops.
   Also use when an agent queries for pattern guidance.
-argument-hint: "e.g. 'explain wave computation' or 'lookup retry'"
+argument-hint: "e.g. 'explain wave computation', 'compare wave dag', or '--context-pattern=task-dag'"
 allowed-tools: Read, Glob, Grep
 hooks:
   Stop:
@@ -22,11 +22,13 @@ hooks:
           prompt: >-
             Check if the assistant's response contains a fenced code block
             with the info string `dojo-envelope`. The block must contain
-            YAML with at least these fields: mode_selected, pattern_selected,
-            route_reason. If the envelope block is missing or incomplete,
-            respond with STOP_REASON: "Response is missing the required
-            dojo-envelope block. Add it before finishing." If the envelope
-            is present and valid, allow the response.
+            YAML with at least these fields: mode_selected, route_reason,
+            and either pattern_selected or patterns_selected (both accepted
+            during the v2 compatibility window). If the envelope block is
+            missing or incomplete, respond with STOP_REASON: "Response is
+            missing the required dojo-envelope block. Add it before
+            finishing." If the envelope is present and valid, allow the
+            response.
 ---
 
 # Agentic Dojo
@@ -53,8 +55,9 @@ Zero-state (max 12 lines):
 Agentic Dojo -- pattern knowledge for orchestration
 
 Modes:
-  explain <pattern>    Sensei teaches the concept (default)
-  lookup <pattern>     Quick reference with structured output
+  explain <pattern>           Sensei teaches the concept (default)
+  lookup <pattern>            Quick reference with structured output
+  compare <pattern> <pattern> Side-by-side comparison of two patterns
 
 Patterns:
   builder-validator    dispatch-loop       higher-order-prompt
@@ -68,6 +71,11 @@ Patterns:
 Examples:
   /dojo explain wave computation    (short forms: wave, dag, spec, hop...)
   /dojo lookup retry-with-resume
+  /dojo compare wave dag
+
+After the reserved-keyword check, read `references/query-classifier.md`
+to classify query_type (single, compare, follow-up, disambiguation).
+When query_type = follow-up, also read `references/context-resolution.md`.
 
 ### Mode Detection
 
@@ -153,9 +161,11 @@ check if a pattern was discussed in the preceding conversation turns.
 
 | Condition | Message | Behavior |
 |-----------|---------|----------|
-| Unknown pattern | `Pattern "{input}" not found. Available: {list}. Did you mean "{closest}"?` | If input prefixes exactly one slug or alias, suggest it. Otherwise list all without a specific suggestion |
-| Unknown mode | `Mode "{input}" not recognized. Available modes: explain (sensei), lookup (reference).` | Show both user-facing and internal names |
-| Multiple patterns detected | `Multiple patterns detected: {list}. Which one would you like?` | List matches and ask user to pick. Do not auto-select |
+| Unknown pattern | `Pattern "{input}" not found. Available: {list}. Did you mean "{closest}"? Tip: try /advisor for recommendations.` | If input prefixes exactly one slug or alias, suggest it. Otherwise list all |
+| Unknown mode | `Mode "{input}" not recognized. Available modes: explain (sensei), lookup (reference), compare.` | Show all modes |
+| 2 explicit patterns (slug/alias) | Route to compare mode | Do not error -- intentional compare |
+| 3+ explicit patterns (slug/alias) | `You named {n} patterns. Compare supports 2 at a time. Which pair for compare, which one for explain or lookup?` | List the detected patterns |
+| Compare with same pattern twice | `Cannot compare a pattern with itself. Try: /dojo explain <pattern>` | Hard error, no output |
 | Missing synthesis slot | `[Not documented for this pattern]` | Inline substitution, do not fail |
 
 If no pattern in the alias table, keyword table, or conversation
@@ -168,19 +178,20 @@ no pattern matches.
 - Never writes code, creates files, or modifies the codebase
 - Never executes scripts or runs commands
 - Does not replace the orchestrator skill -- this teaches patterns, that executes them
-- Does not compare patterns side-by-side (v2 consideration)
 
 ## Step 2: Read
 
-Read these three files in order:
+Read these files in order based on detected mode:
 
-1. The mode file matching the detected mode:
-   - Sensei: `references/mode-sensei.md` -- note the Voice ID
-   - Reference: `references/mode-reference.md` -- note the Voice ID
-2. The pattern file from the File column in the keyword table above
-3. The voice file matching the Voice ID from the mode file:
-   - miyagi: `references/voice-miyagi.md`
-   - jarvis: `references/voice-jarvis.md`
+1. Sensei or Reference mode:
+   - Mode file: `references/mode-sensei.md` or `references/mode-reference.md` -- note the Voice ID
+   - Pattern file from the File column in the keyword table above
+   - Voice file matching the Voice ID: `references/voice-miyagi.md` or `references/voice-jarvis.md`
+2. Compare mode:
+   - `references/mode-compare.md` -- note the Voice ID (JARVIS)
+   - Pattern file for pattern A (from keyword table)
+   - Pattern file for pattern B (from keyword table)
+   - `references/voice-jarvis.md`
 
 ## Step 3: Synthesize
 
@@ -198,25 +209,11 @@ IMPORTANT: End every response with the routing envelope. Do not skip it.
 
 ## Worked Example
 
-Input: /dojo explain wave computation
+Input: `/dojo explain wave computation`
 
-Step 1 (Route):
-  "explain wave computation" is not a reserved keyword. Continue.
-  No prefix override (no colon). Check trigger words.
-  "explain" matches Sensei trigger. Mode = Sensei.
-  "wave computation" matches alias "wave" -> wave-computation.
-  Pattern = wave-computation. Route reason: trigger-word: explain
-
-Step 2 (Read):
-  1. Read references/mode-sensei.md. Voice ID = miyagi.
-  2. Read .claude/references/patterns/pattern-wave-computation.md.
-  3. Read references/voice-miyagi.md.
-
-Step 3 (Synthesize):
-  Line 1: [Sensei | Wave Computation]
-  Body: Follow Sensei template sections in Miyagi voice using
-        wave-computation slots as source material
-  Last: dojo-envelope block with route metadata
+Route: "explain" -> Sensei mode. "wave" alias -> wave-computation.
+Read: mode-sensei.md (Voice=miyagi), pattern-wave-computation.md, voice-miyagi.md.
+Synthesize: [Sensei | Wave Computation] + Miyagi voice + dojo-envelope.
 
 ## Envelope Format
 
@@ -224,19 +221,27 @@ Every response MUST end with a routing envelope in a fenced code block
 using the `dojo-envelope` info string (not `yaml`):
 
 ```dojo-envelope
+envelope_version: 2
+query_type: single
 mode_selected: sensei
+patterns_selected:
+  - wave-computation
 pattern_selected: wave-computation
 route_reason: "trigger-word: explain"
 warnings: []
 ```
 
+`patterns_selected`: authoritative list. `pattern_selected`: shim (= first item, remove after one cycle).
+`query_type`: `single` | `compare` | `follow-up` | `disambiguation`
+`context_source`: include when resolved from context (e.g. `"advisor-envelope from prior turn"`).
+
 `route_reason` values:
 - `prefix-override: sensei:` (or `reference:`, `explain:`, `lookup:`)
-- `exact-slug`
-- `alias: wave`
-- `trigger-word: explain`
-- `conversation-context`
-- `default`
+- `exact-slug`, `alias: wave`, `trigger-word: explain`
+- `compare-trigger: vs`, `context-resolution:`, `structured-follow-up:`
+- `conversation-context`, `default`
+
+Envelope extraction regex: `/```(?:dojo|advisor)-envelope\n([\s\S]*?)```/`
 
 No `confidence` field. Confidence is derivable from route_reason:
 prefix-override and exact-slug are high, trigger-word and alias are

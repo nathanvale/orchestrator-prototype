@@ -42,6 +42,7 @@ Generate these sections in order:
    ```
    /dojo explain <top-pattern-slug>    -- Sensei teaches the concept
    /dojo lookup <top-pattern-slug>     -- Quick structured reference
+   /dojo compare <slug-a> <slug-b>     -- Side-by-side comparison
    ```
 
    Follow with: "Should any of the other recommended patterns warrant

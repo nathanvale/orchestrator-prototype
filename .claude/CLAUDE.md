@@ -20,6 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `.claude/agents/validator.md` | Validator agent for module verification |
 | `.claude/skills/orchestrator/` | Orchestrator skill (dev version) |
 | `.claude/commands/orchestrate.md` | `/orchestrate` command shim |
+| `.claude/rules/rebase-checklist.md` | Rebase procedure (dev-only workflow) |
 | `docs/` | Patterns source docs, plans, brainstorms, agents catalog |
 | `specs/` | Master plan, stage definitions, examples |
 
@@ -47,9 +48,23 @@ dev (build here) --> feature branch (PR) --> main (lobby)
 2. Create a feature branch from main for the lobby changes
 3. Cherry-pick or recreate the lobby-safe commits onto the feature branch
 4. PR the feature branch to main
-5. After merge, rebase dev onto main: `git rebase main`
+5. After merge, rebase dev onto main (see procedure below)
 
 **NEVER merge dev directly into main.** Dev has agents and orchestrator artifacts that violate main's rules.
+
+### Rebasing Dev onto Main
+
+**Do NOT use plain `git rebase main`.** PRs use squash-merge, so replaying already-merged commits causes conflict hell. Always use `--onto`:
+
+```bash
+git fetch origin main
+MERGE_BASE=$(git merge-base dev origin/main)
+git rebase --onto origin/main $MERGE_BASE dev
+# resolve conflicts (CLAUDE.md is the usual one)
+git push origin dev --force-with-lease
+```
+
+**Full checklist with conflict resolution:** `.claude/rules/rebase-checklist.md`
 
 ---
 
