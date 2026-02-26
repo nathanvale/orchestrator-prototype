@@ -92,6 +92,11 @@ Extract signals from $ARGUMENTS. For each signal present, note it:
 | cross-session | resume session, interrupted, overnight, long pause, session ended |
 | ui-facing | UI, component, visual, screenshot, browser, layout, page, style |
 
+After keyword extraction, also detect structural signals:
+- Sequential/pipeline language ("first... then... finally") -> dependencies, multiple-tasks
+- Role differentiation ("one builds, another checks") -> verification-needed
+- Error narratives, iteration loops, scale/batch language -> map to closest characteristic
+
 ### Pattern Scoring
 
 Score each of the 19 patterns against the extracted characteristics.
@@ -155,6 +160,7 @@ Every response MUST end with a routing envelope in a fenced code block
 using the `advisor-envelope` info string (not `yaml`):
 
 ```advisor-envelope
+envelope_version: 2
 ranked_patterns:
   - slug: <top-pattern-slug>
     score: high
@@ -169,3 +175,5 @@ next_commands:
   - "/dojo explain <top-pattern-slug>"
   - "/dojo lookup <top-pattern-slug>"
 ```
+
+Envelope extraction regex: `/```(?:dojo|advisor)-envelope\n([\s\S]*?)```/`
