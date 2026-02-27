@@ -2,6 +2,7 @@
 slug: team-profiles
 display_name: "Team Profiles"
 one_liner: "Bundle agent identities (builder, validator) into named, switchable configurations resolved at orchestration start via the --team flag."
+intel_date: null
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

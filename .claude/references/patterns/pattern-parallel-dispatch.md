@@ -2,6 +2,7 @@
 slug: parallel-dispatch
 display_name: "Parallel Dispatch"
 one_liner: "When multiple tasks in the same wave have no dependencies between them, dispatch their builders concurrently instead of sequentially to reduce wall-clock time."
+intel_date: null
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

@@ -2,6 +2,7 @@
 slug: higher-order-prompt
 display_name: "Higher-Order Prompt"
 one_liner: "A prompt that takes other prompts (agent identities) as parameters, separating fixed orchestration logic from variable agent configuration."
+intel_date: null
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

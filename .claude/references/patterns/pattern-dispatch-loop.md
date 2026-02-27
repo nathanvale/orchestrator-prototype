@@ -2,6 +2,7 @@
 slug: dispatch-loop
 display_name: "Dispatch Loop"
 one_liner: "A central coordinator agent sequences task creation, Builder dispatch, and Validator dispatch without writing code itself."
+intel_date: null
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

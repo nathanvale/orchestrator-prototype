@@ -2,6 +2,7 @@
 slug: iterative-refinement
 display_name: "Iterative Refinement"
 one_liner: "A human-in-the-loop gate between plan generation and plan execution that lets users approve, modify, or cancel before any agent is dispatched."
+intel_date: null
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"

@@ -2,6 +2,7 @@
 slug: plugin-architecture
 display_name: "Plugin Architecture"
 one_liner: "Extract a working prototype from a project's .claude/ directory into a distributable marketplace plugin while keeping the prototype repo as an educational snapshot."
+intel_date: null
 slots:
   pattern_id: "## Pattern ID"
   quick_summary: "## Quick Summary"
